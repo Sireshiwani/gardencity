@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GardenCity{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        obsidian: "#090909",
+                        bronze: "#b88948",
+                        ember: "#d6a45f",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        body: ["Georgia", "serif"],
+                    },
+                },
+            },
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{% static 'shop/styles.css' %}">
+</head>
+<body class="bg-obsidian text-zinc-100 font-body">
+    <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(184,137,72,0.18),_transparent_28%),linear-gradient(180deg,_#0a0a0a,_#141414)]">
+        <header class="border-b border-white/10 bg-black/40 backdrop-blur">
+            <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+                <a href="{% url 'home' %}" class="font-display text-2xl font-bold uppercase tracking-[0.3em] text-amber-400">GardenCity</a>
+                <nav class="flex items-center gap-5 text-sm text-zinc-300">
+                    <a href="{% url 'home' %}" class="hover:text-amber-400">Home</a>
+                    <a href="{% url 'book-now' %}" class="hover:text-amber-400">Book Now</a>
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="hover:text-amber-400">Dashboard</a>
+                        {% if request.user.role == 'admin' %}
+                            <a href="{% url 'staff-list' %}" class="hover:text-amber-400">Staff</a>
+                        {% endif %}
+                        {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                            <a href="{% url 'service-list' %}" class="hover:text-amber-400">Services</a>
+                            <a href="{% url 'sale-list' %}" class="hover:text-amber-400">Sales</a>
+                            <a href="{% url 'expense-list' %}" class="hover:text-amber-400">Expenses</a>
+                            <a href="{% url 'sales-report' %}" class="hover:text-amber-400">Reports</a>
+                        {% endif %}
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button class="rounded-full border border-amber-500/50 px-4 py-2 text-amber-300 hover:bg-amber-500/10">Logout</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="rounded-full border border-amber-500/50 px-4 py-2 text-amber-300 hover:bg-amber-500/10">Staff Login</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </header>
+        {% if messages %}
+            <div class="mx-auto max-w-7xl px-6 pt-6">
+                {% for message in messages %}
+                    <div class="mb-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <main class="mx-auto max-w-7xl px-6 py-10">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+<div class="flex items-end justify-between gap-4">
+    <div>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Expenses</p>
+        <h1 class="mt-3 font-display text-4xl font-bold text-white">Operating costs and shop overhead.</h1>
+    </div>
+    <a href="{% url 'expense-create' %}" class="rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Log Expense</a>
+</div>
+<section class="mt-8 glass-card rounded-3xl p-6 table-shell">
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Description</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.category }}</td>
+                    <td>${{ expense.amount }}</td>
+                    <td>{{ expense.description }}</td>
+                    <td>{{ expense.date|date:"M d, Y" }}</td>
+                    <td class="space-x-3">
+                        <a href="{% url 'expense-update' expense.pk %}" class="text-amber-300">Edit</a>
+                        {% if request.user.role == 'admin' %}
+                            <a href="{% url 'expense-delete' expense.pk %}" class="text-red-300">Delete</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

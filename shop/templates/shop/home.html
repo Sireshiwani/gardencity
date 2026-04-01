@@ -1,0 +1,83 @@
+{% extends 'shop/base.html' %}
+{% block title %}GardenCity | Premium Barber Experience{% endblock %}
+{% block content %}
+<section class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+    <div class="space-y-6">
+        <p class="font-display text-sm uppercase tracking-[0.4em] text-amber-400">Luxury Grooming. Precision Craft.</p>
+        <h1 class="font-display text-5xl font-black leading-tight text-white md:text-7xl">A premium barbershop experience for modern gentlemen.</h1>
+        <p class="max-w-2xl text-lg leading-8 text-zinc-300">
+            GardenCity blends sharp cuts, polished service, and an elevated atmosphere with deep charcoal interiors, bronze accents, and effortless booking.
+        </p>
+        <div class="flex flex-wrap gap-4">
+            <a href="{% url 'book-now' %}" class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Book Now</a>
+            <a href="#services" class="rounded-full border border-white/15 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:border-amber-400 hover:text-amber-300">Our Services</a>
+        </div>
+    </div>
+    <div class="glass-card overflow-hidden rounded-[2rem]">
+        <img
+            src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80"
+            alt="Premium barber tools and grooming station"
+            class="h-[520px] w-full object-cover opacity-90"
+        >
+    </div>
+</section>
+
+<section id="services" class="mt-20">
+    <div class="mb-8 flex items-end justify-between">
+        <div>
+            <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Our Services</p>
+            <h2 class="mt-3 font-display text-4xl font-bold text-white">Precision cuts and elevated grooming.</h2>
+        </div>
+    </div>
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {% for service in services %}
+            <article class="glass-card rounded-3xl p-6">
+                <p class="text-sm uppercase tracking-[0.25em] text-amber-400">{{ service.get_category_display }}</p>
+                <h3 class="mt-3 font-display text-2xl font-bold">{{ service.name }}</h3>
+                <p class="mt-3 min-h-[72px] text-zinc-400">{{ service.description|default:"Clean finish, premium detail, and confident style." }}</p>
+                <div class="mt-5 flex items-center justify-between">
+                    <span class="text-3xl font-semibold text-white">${{ service.price }}</span>
+                    <span class="text-sm text-zinc-400">{{ service.duration_minutes }} mins</span>
+                </div>
+            </article>
+        {% empty %}
+            <div class="glass-card rounded-3xl p-6 text-zinc-400">Add services from the dashboard to populate this section.</div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="mt-20 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+    <div class="glass-card rounded-3xl p-8">
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Meet The Team</p>
+        <h2 class="mt-3 font-display text-4xl font-bold">Crafted by barbers who respect the details.</h2>
+        <p class="mt-4 text-zinc-300">Every appointment is delivered with sharp technique, consistent service, and a premium in-chair experience.</p>
+        <div class="mt-8 space-y-4">
+            {% for member in team %}
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <h3 class="font-display text-xl font-semibold text-white">{{ member.full_name }}</h3>
+                    <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">{{ member.get_role_display }}</p>
+                </div>
+            {% empty %}
+                <p class="text-zinc-400">Team profiles will appear once staff are added.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="glass-card rounded-3xl p-8">
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Quick Booking</p>
+        <h2 class="mt-3 font-display text-4xl font-bold">Reserve your next appointment.</h2>
+        <form method="post" action="{% url 'book-now' %}" class="mt-8 grid gap-4 md:grid-cols-2">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
+                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<p class="mt-1 text-sm text-red-300">{{ field.errors|join:", " }}</p>{% endif %}
+                </div>
+            {% endfor %}
+            <div class="md:col-span-2">
+                <button class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Request Booking</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
