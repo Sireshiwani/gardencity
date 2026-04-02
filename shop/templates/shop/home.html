@@ -1,12 +1,13 @@
 {% extends 'shop/base.html' %}
-{% block title %}GardenCity | Premium Barber Experience{% endblock %}
+{% load static %}
+{% block title %}Garden City Fine Cuts | Premium Barber Experience{% endblock %}
 {% block content %}
 <section class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
     <div class="space-y-6">
         <p class="font-display text-sm uppercase tracking-[0.4em] text-amber-400">Luxury Grooming. Precision Craft.</p>
-        <h1 class="font-display text-5xl font-black leading-tight text-white md:text-7xl">A premium barbershop experience for modern gentlemen.</h1>
+        <h1 class="font-display text-5xl font-black leading-tight text-white md:text-7xl">Your Image is Your Signature. Make it Bold.</h1>
         <p class="max-w-2xl text-lg leading-8 text-zinc-300">
-            GardenCity blends sharp cuts, polished service, and an elevated atmosphere with deep charcoal interiors, bronze accents, and effortless booking.
+            Garden City Fine Cuts blends sharp cuts, polished service, and an elevated atmosphere with deep charcoal interiors, bronze accents, and effortless booking.
         </p>
         <div class="flex flex-wrap gap-4">
             <a href="{% url 'book-now' %}" class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Book Now</a>
@@ -15,8 +16,8 @@
     </div>
     <div class="glass-card overflow-hidden rounded-[2rem]">
         <img
-            src="https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1200&q=80"
-            alt="Premium barber tools and grooming station"
+            src="{% static 'shop/hero.png' %}"
+            alt="Barber styling a client at Garden City Fine Cuts"
             class="h-[520px] w-full object-cover opacity-90"
         >
     </div>
@@ -31,13 +32,20 @@
     </div>
     <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {% for service in services %}
-            <article class="glass-card rounded-3xl p-6">
+            <article class="glass-card overflow-hidden rounded-3xl">
+                <img
+                    src="{{ service.photo_url|default:'https://images.unsplash.com/photo-1521493959102-bdd6677fdd81?auto=format&fit=crop&w=1200&q=80' }}"
+                    alt="{{ service.name }}"
+                    class="h-44 w-full object-cover"
+                >
+                <div class="p-6">
                 <p class="text-sm uppercase tracking-[0.25em] text-amber-400">{{ service.get_category_display }}</p>
                 <h3 class="mt-3 font-display text-2xl font-bold">{{ service.name }}</h3>
                 <p class="mt-3 min-h-[72px] text-zinc-400">{{ service.description|default:"Clean finish, premium detail, and confident style." }}</p>
                 <div class="mt-5 flex items-center justify-between">
                     <span class="text-3xl font-semibold text-white">${{ service.price }}</span>
                     <span class="text-sm text-zinc-400">{{ service.duration_minutes }} mins</span>
+                </div>
                 </div>
             </article>
         {% empty %}
@@ -53,9 +61,16 @@
         <p class="mt-4 text-zinc-300">Every appointment is delivered with sharp technique, consistent service, and a premium in-chair experience.</p>
         <div class="mt-8 space-y-4">
             {% for member in team %}
-                <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <h3 class="font-display text-xl font-semibold text-white">{{ member.full_name }}</h3>
-                    <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">{{ member.get_role_display }}</p>
+                <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <img
+                        src="{{ member.photo_url|default:'https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=300&q=80' }}"
+                        alt="{{ member.full_name }}"
+                        class="h-16 w-16 rounded-full border border-amber-500/30 object-cover"
+                    >
+                    <div>
+                        <h3 class="font-display text-xl font-semibold text-white">{{ member.full_name }}</h3>
+                        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">{{ member.get_role_display }}</p>
+                    </div>
                 </div>
             {% empty %}
                 <p class="text-zinc-400">Team profiles will appear once staff are added.</p>

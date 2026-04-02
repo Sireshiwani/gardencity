@@ -15,6 +15,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=Roles.choices, default=Roles.STAFF)
+    photo_url = models.URLField(blank=True, help_text="Public URL for this staff member's profile photo.")
     commission_rate = models.DecimalField(
         max_digits=5,
         decimal_places=2,
@@ -52,6 +53,7 @@ class PaymentMethod(models.TextChoices):
 class Service(models.Model):
     name = models.CharField(max_length=120)
     category = models.CharField(max_length=20, choices=ServiceCategory.choices)
+    photo_url = models.URLField(blank=True, help_text="Public URL for the service photo.")
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration_minutes = models.PositiveIntegerField(default=45)

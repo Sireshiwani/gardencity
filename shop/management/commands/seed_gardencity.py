@@ -14,7 +14,7 @@ class Command(BaseCommand):
         admin, _ = User.objects.get_or_create(
             username="admin",
             defaults={
-                "full_name": "GardenCity Admin",
+                "full_name": "Garden City Fine Cuts Admin",
                 "email": "admin@gardencity.local",
                 "role": User.Roles.ADMIN,
                 "commission_rate": Decimal("0.00"),

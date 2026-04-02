@@ -19,7 +19,9 @@ from .forms import (
     LoginForm,
     PublicBookingForm,
     SaleForm,
+    ServicePhotoUpdateForm,
     ServiceForm,
+    StaffPhotoUpdateForm,
     StaffUserCreationForm,
     StaffUserUpdateForm,
 )
@@ -39,6 +41,18 @@ class AdminRequiredMixin(RoleRequiredMixin):
 
 class ManagerOrAdminRequiredMixin(RoleRequiredMixin):
     allowed_roles = [User.Roles.ADMIN, User.Roles.MANAGER]
+
+
+class FormTitleMixin:
+    form_title = None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.form_title:
+            context["form_title"] = self.form_title
+        else:
+            context["form_title"] = f"{self.model._meta.verbose_name.title()} Form"
+        return context
 
 
 def daterange_from_request(request):
@@ -67,6 +81,10 @@ def daterange_from_request(request):
 class StaffLoginView(LoginView):
     template_name = "shop/login.html"
     authentication_form = LoginForm
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Invalid username or password. Please try again.")
+        return super().form_invalid(form)
 
 
 def home(request):
@@ -162,7 +180,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class StaffListView(AdminRequiredMixin, ListView):
+class StaffListView(ManagerOrAdminRequiredMixin, ListView):
     model = User
     template_name = "shop/staff_list.html"
     context_object_name = "staff_members"
@@ -171,18 +189,30 @@ class StaffListView(AdminRequiredMixin, ListView):
         return User.objects.order_by("role", "full_name")
 
 
-class StaffCreateView(AdminRequiredMixin, CreateView):
+class StaffCreateView(AdminRequiredMixin, FormTitleMixin, CreateView):
     model = User
     form_class = StaffUserCreationForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("staff-list")
+    form_title = "Add Staff Member"
 
 
-class StaffUpdateView(AdminRequiredMixin, UpdateView):
+class StaffUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = User
-    form_class = StaffUserUpdateForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("staff-list")
+    form_title = "Edit Staff Member"
+
+    def get_form_class(self):
+        if self.request.user.role == User.Roles.MANAGER:
+            return StaffPhotoUpdateForm
+        return StaffUserUpdateForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.role == User.Roles.MANAGER:
+            context["form_title"] = "Update Staff Profile"
+        return context
 
 
 class StaffDeleteView(AdminRequiredMixin, DeleteView):
@@ -197,18 +227,30 @@ class ServiceListView(ManagerOrAdminRequiredMixin, ListView):
     context_object_name = "services"
 
 
-class ServiceCreateView(AdminRequiredMixin, CreateView):
+class ServiceCreateView(AdminRequiredMixin, FormTitleMixin, CreateView):
     model = Service
     form_class = ServiceForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("service-list")
+    form_title = "Add Service"
 
 
-class ServiceUpdateView(AdminRequiredMixin, UpdateView):
+class ServiceUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = Service
-    form_class = ServiceForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("service-list")
+    form_title = "Edit Service"
+
+    def get_form_class(self):
+        if self.request.user.role == User.Roles.MANAGER:
+            return ServicePhotoUpdateForm
+        return ServiceForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.role == User.Roles.MANAGER:
+            context["form_title"] = "Update Service Profile"
+        return context
 
 
 class ServiceDeleteView(AdminRequiredMixin, DeleteView):
@@ -226,18 +268,20 @@ class SaleListView(ManagerOrAdminRequiredMixin, ListView):
         return Sale.objects.select_related("service", "staff")
 
 
-class SaleCreateView(ManagerOrAdminRequiredMixin, CreateView):
+class SaleCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
     model = Sale
     form_class = SaleForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("sale-list")
+    form_title = "Log Sale"
 
 
-class SaleUpdateView(ManagerOrAdminRequiredMixin, UpdateView):
+class SaleUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = Sale
     form_class = SaleForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("sale-list")
+    form_title = "Edit Sale"
 
 
 class SaleDeleteView(AdminRequiredMixin, DeleteView):
@@ -252,18 +296,20 @@ class ExpenseListView(ManagerOrAdminRequiredMixin, ListView):
     context_object_name = "expenses"
 
 
-class ExpenseCreateView(ManagerOrAdminRequiredMixin, CreateView):
+class ExpenseCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
     model = Expense
     form_class = ExpenseForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("expense-list")
+    form_title = "Log Expense"
 
 
-class ExpenseUpdateView(ManagerOrAdminRequiredMixin, UpdateView):
+class ExpenseUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = Expense
     form_class = ExpenseForm
     template_name = "shop/form.html"
     success_url = reverse_lazy("expense-list")
+    form_title = "Edit Expense"
 
 
 class ExpenseDeleteView(AdminRequiredMixin, DeleteView):

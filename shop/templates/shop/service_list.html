@@ -30,11 +30,11 @@
                     <td>{{ service.duration_minutes }} mins</td>
                     <td>{% if service.is_active %}Active{% else %}Inactive{% endif %}</td>
                     <td class="space-x-3">
-                        {% if request.user.role == 'admin' %}
+                        {% if request.user.role == 'admin' or request.user.role == 'manager' %}
                             <a href="{% url 'service-update' service.pk %}" class="text-amber-300">Edit</a>
+                        {% endif %}
+                        {% if request.user.role == 'admin' %}
                             <a href="{% url 'service-delete' service.pk %}" class="text-red-300">Delete</a>
-                        {% else %}
-                            <span class="text-zinc-500">View only</span>
                         {% endif %}
                     </td>
                 </tr>

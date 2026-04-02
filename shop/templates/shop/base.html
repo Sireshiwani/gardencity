@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GardenCity{% endblock %}</title>
+    <title>{% block title %}Garden City Fine Cuts{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -30,13 +30,16 @@
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(184,137,72,0.18),_transparent_28%),linear-gradient(180deg,_#0a0a0a,_#141414)]">
         <header class="border-b border-white/10 bg-black/40 backdrop-blur">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-                <a href="{% url 'home' %}" class="font-display text-2xl font-bold uppercase tracking-[0.3em] text-amber-400">GardenCity</a>
+                <a href="{% url 'home' %}" class="flex items-center gap-3">
+                    <img src="{% static 'shop/logo.png' %}" alt="Garden City Fine Cuts logo" class="h-12 w-12 rounded-full border border-amber-500/40 object-cover">
+                    <span class="font-display text-xl font-bold uppercase tracking-[0.14em] text-amber-400">Garden City Fine Cuts</span>
+                </a>
                 <nav class="flex items-center gap-5 text-sm text-zinc-300">
                     <a href="{% url 'home' %}" class="hover:text-amber-400">Home</a>
                     <a href="{% url 'book-now' %}" class="hover:text-amber-400">Book Now</a>
                     {% if request.user.is_authenticated %}
                         <a href="{% url 'dashboard' %}" class="hover:text-amber-400">Dashboard</a>
-                        {% if request.user.role == 'admin' %}
+                        {% if request.user.role == 'admin' or request.user.role == 'manager' %}
                             <a href="{% url 'staff-list' %}" class="hover:text-amber-400">Staff</a>
                         {% endif %}
                         {% if request.user.role == 'admin' or request.user.role == 'manager' %}

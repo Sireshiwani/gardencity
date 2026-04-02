@@ -18,7 +18,7 @@ class TailwindMixin:
 class StaffUserCreationForm(TailwindMixin, UserCreationForm):
     class Meta:
         model = User
-        fields = ("username", "full_name", "email", "role", "commission_rate", "password1", "password2")
+        fields = ("username", "full_name", "email", "role", "photo_url", "commission_rate", "password1", "password2")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,7 +28,7 @@ class StaffUserCreationForm(TailwindMixin, UserCreationForm):
 class StaffUserUpdateForm(TailwindMixin, forms.ModelForm):
     class Meta:
         model = User
-        fields = ("username", "full_name", "email", "role", "commission_rate", "is_active")
+        fields = ("username", "full_name", "email", "role", "photo_url", "commission_rate", "is_active")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,7 +47,27 @@ class LoginForm(TailwindMixin, AuthenticationForm):
 class ServiceForm(TailwindMixin, forms.ModelForm):
     class Meta:
         model = Service
-        fields = ("name", "category", "description", "price", "duration_minutes", "is_active")
+        fields = ("name", "category", "photo_url", "description", "price", "duration_minutes", "is_active")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_tailwind()
+
+
+class StaffPhotoUpdateForm(TailwindMixin, forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("full_name", "photo_url")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_tailwind()
+
+
+class ServicePhotoUpdateForm(TailwindMixin, forms.ModelForm):
+    class Meta:
+        model = Service
+        fields = ("name", "photo_url", "description")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

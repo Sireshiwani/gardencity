@@ -1,4 +1,4 @@
-# GardenCity
+# Garden City Fine Cuts
 
 High-end barbershop management system and premium dark-themed website built with Django, Tailwind CSS, Chart.js, and SQLite for development.
 
