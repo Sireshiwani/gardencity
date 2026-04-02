@@ -40,6 +40,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'shop.context_processors.currency',
             ],
         },
     },
@@ -87,6 +88,9 @@ LOGOUT_REDIRECT_URL = 'home'
 AUTH_USER_MODEL = 'shop.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Display prefix for money amounts in templates (Kenyan Shillings).
+SITE_CURRENCY = "Kshs"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

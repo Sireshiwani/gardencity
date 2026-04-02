@@ -204,6 +204,9 @@ class LoyaltySettingsDashboardForm(TailwindMixin, forms.ModelForm):
 
     class Meta:
         model = LoyaltySettings
+        labels = {
+            "points_per_dollar": "Points per Kshs",
+        }
         fields = [
             "points_per_visit",
             "points_per_dollar",

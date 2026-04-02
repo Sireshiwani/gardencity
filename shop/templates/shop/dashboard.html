@@ -17,21 +17,21 @@
 <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
     <div class="glass-card rounded-3xl p-6">
         <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Today's Sales</p>
-        <h2 class="mt-4 font-display text-4xl font-bold">${{ today_sales }}</h2>
+        <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ today_sales }}</h2>
     </div>
     <div class="glass-card rounded-3xl p-6">
         <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">This Month's Sales</p>
-        <h2 class="mt-4 font-display text-4xl font-bold">${{ month_sales }}</h2>
+        <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ month_sales }}</h2>
     </div>
     {% if request.user.role == 'admin' or request.user.role == 'manager' %}
         <div class="glass-card rounded-3xl p-6">
             <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">This Month's Expenses</p>
-            <h2 class="mt-4 font-display text-4xl font-bold">${{ month_expenses }}</h2>
+            <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ month_expenses }}</h2>
         </div>
     {% endif %}
     <div class="glass-card rounded-3xl p-6">
         <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">My Commission</p>
-        <h2 class="mt-4 font-display text-4xl font-bold">${{ personal_commission }}</h2>
+        <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ personal_commission }}</h2>
     </div>
 </section>
 
@@ -53,7 +53,7 @@
                 <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
                     <div class="flex items-center justify-between">
                         <span class="font-display text-lg text-white">{{ item.staff__full_name }}</span>
-                        <span class="text-amber-300">${{ item.total_sales }}</span>
+                        <span class="text-amber-300">{{ CURRENCY }} {{ item.total_sales }}</span>
                     </div>
                     <p class="mt-1 text-sm text-zinc-400">{{ item.transactions }} transactions</p>
                 </div>
@@ -112,9 +112,9 @@
                 <tr>
                     <td>{{ sale.service.name }}</td>
                     <td>{{ sale.staff.full_name }}</td>
-                    <td>${{ sale.price }}</td>
-                    <td>${{ sale.commission_amount }}</td>
-                    <td>${{ sale.shop_net }}</td>
+                    <td>{{ CURRENCY }} {{ sale.price }}</td>
+                    <td>{{ CURRENCY }} {{ sale.commission_amount }}</td>
+                    <td>{{ CURRENCY }} {{ sale.shop_net }}</td>
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                 </tr>
             {% empty %}

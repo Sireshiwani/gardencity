@@ -28,9 +28,9 @@
                     <td>{{ sale.service.name }}</td>
                     <td>{% if sale.customer %}{{ sale.customer.first_name }} {{ sale.customer.last_name }} ({{ sale.customer.email }}){% else %}—{% endif %}</td>
                     <td>{% if sale.staff %}{{ sale.staff.full_name }}{% else %}{{ sale.staff_snapshot_name|default:"—" }}{% endif %}</td>
-                    <td>${{ sale.price }}</td>
-                    <td>${{ sale.commission_amount }}</td>
-                    <td>${{ sale.shop_net }}</td>
+                    <td>{{ CURRENCY }} {{ sale.price }}</td>
+                    <td>{{ CURRENCY }} {{ sale.commission_amount }}</td>
+                    <td>{{ CURRENCY }} {{ sale.shop_net }}</td>
                     <td>{{ sale.get_payment_method_display }}</td>
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                     <td class="space-x-3">

@@ -142,7 +142,7 @@ def award_points_for_completed_appointment(appointment: Appointment) -> None:
         customer,
         points_delta=spend_pts,
         entry_type=PointsLedger.EntryType.SPEND,
-        description=f"Spend bonus on ${spend_amount} (x{mult})",
+        description=f"Spend bonus on Kshs {spend_amount} (x{mult})",
         appointment=appointment,
         sale=linked_sale,
         multiplier_applied=mult,
@@ -200,7 +200,7 @@ def award_points_for_sale(sale: Sale) -> None:
         sale.customer,
         points_delta=spend_pts,
         entry_type=PointsLedger.EntryType.SPEND,
-        description=f"Walk-in sale ${sale.price} (x{mult})",
+        description=f"Walk-in sale Kshs {sale.price} (x{mult})",
         sale=sale,
         multiplier_applied=mult,
     )

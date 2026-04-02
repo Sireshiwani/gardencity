@@ -26,7 +26,7 @@
                 <tr>
                     <td>{{ service.name }}</td>
                     <td>{{ service.get_category_display }}</td>
-                    <td>${{ service.price }}</td>
+                    <td>{{ CURRENCY }} {{ service.price }}</td>
                     <td>{{ service.duration_minutes }} mins</td>
                     <td>{% if service.is_active %}Active{% else %}Inactive{% endif %}</td>
                     <td class="space-x-3">

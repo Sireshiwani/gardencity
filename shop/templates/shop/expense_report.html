@@ -37,7 +37,7 @@
                 {% for item in by_category %}
                     <tr>
                         <td>{{ item.category }}</td>
-                        <td>${{ item.total }}</td>
+                        <td>{{ CURRENCY }} {{ item.total }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -59,7 +59,7 @@
                     <tr>
                         <td>{{ expense.date|date:"M d, Y" }}</td>
                         <td>{{ expense.category }}</td>
-                        <td>${{ expense.amount }}</td>
+                        <td>{{ CURRENCY }} {{ expense.amount }}</td>
                         <td>{{ expense.description }}</td>
                     </tr>
                 {% endfor %}

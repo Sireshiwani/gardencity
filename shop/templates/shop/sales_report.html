@@ -40,10 +40,10 @@
                 {% for item in by_staff %}
                     <tr>
                         <td>{{ item.name }}</td>
-                        <td>${{ item.total_sales }}</td>
+                        <td>{{ CURRENCY }} {{ item.total_sales }}</td>
                         <td>{{ item.commission_rate }}%</td>
-                        <td>${{ item.staff_earnings }}</td>
-                        <td>${{ item.shop_net }}</td>
+                        <td>{{ CURRENCY }} {{ item.staff_earnings }}</td>
+                        <td>{{ CURRENCY }} {{ item.shop_net }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -62,7 +62,7 @@
                 {% for item in by_category %}
                     <tr>
                         <td>{{ item.service__category|title }}</td>
-                        <td>${{ item.total }}</td>
+                        <td>{{ CURRENCY }} {{ item.total }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -90,9 +90,9 @@
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                     <td>{{ sale.staff.full_name }}</td>
                     <td>{{ sale.service.name }}</td>
-                    <td>${{ sale.price }}</td>
-                    <td>${{ sale.commission_amount }}</td>
-                    <td>${{ sale.shop_net }}</td>
+                    <td>{{ CURRENCY }} {{ sale.price }}</td>
+                    <td>{{ CURRENCY }} {{ sale.commission_amount }}</td>
+                    <td>{{ CURRENCY }} {{ sale.shop_net }}</td>
                     <td>{{ sale.get_payment_method_display }}</td>
                 </tr>
             {% endfor %}

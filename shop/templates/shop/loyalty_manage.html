@@ -18,7 +18,7 @@
 
     <section class="glass-card rounded-3xl p-8">
         <h2 class="font-display text-2xl font-bold text-white">Points — visits &amp; spend</h2>
-        <p class="mt-2 text-sm text-zinc-500">Visit and dollar points apply when an appointment is marked completed (and for walk-in sales without an appointment). Slow-hour windows multiply the total points for that event.</p>
+        <p class="mt-2 text-sm text-zinc-500">Visit and spend-based (Kshs) points apply when an appointment is marked completed (and for walk-in sales without an appointment). Slow-hour windows multiply the total points for that event.</p>
         <div class="mt-6 grid gap-4 md:grid-cols-2">
             <div>
                 <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.points_per_visit.label }}</label>
@@ -28,7 +28,7 @@
             <div>
                 <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.points_per_dollar.label }}</label>
                 {{ form.points_per_dollar }}
-                <p class="mt-1 text-xs text-zinc-500">Points per $1 of service/sale amount (before multiplier).</p>
+                <p class="mt-1 text-xs text-zinc-500">Points per 1 Kshs of service/sale amount (before multiplier).</p>
                 {% if form.points_per_dollar.errors %}<p class="mt-1 text-sm text-red-300">{{ form.points_per_dollar.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
