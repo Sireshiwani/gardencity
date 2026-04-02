@@ -10,7 +10,7 @@ from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
@@ -81,6 +81,11 @@ def daterange_from_request(request):
 class StaffLoginView(LoginView):
     template_name = "shop/login.html"
     authentication_form = LoginForm
+
+    def get_success_url(self):
+        if getattr(self.request.user, "role", None) == User.Roles.CUSTOMER:
+            return reverse("customer-dashboard")
+        return reverse("dashboard")
 
     def form_invalid(self, form):
         messages.error(self.request, "Invalid username or password. Please try again.")
@@ -265,13 +270,13 @@ class SaleListView(ManagerOrAdminRequiredMixin, ListView):
     context_object_name = "sales"
 
     def get_queryset(self):
-        return Sale.objects.select_related("service", "staff")
+        return Sale.objects.select_related("service", "staff", "customer")
 
 
 class SaleCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
     model = Sale
     form_class = SaleForm
-    template_name = "shop/form.html"
+    template_name = "shop/sale_form.html"
     success_url = reverse_lazy("sale-list")
     form_title = "Log Sale"
 
@@ -279,7 +284,7 @@ class SaleCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
 class SaleUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = Sale
     form_class = SaleForm
-    template_name = "shop/form.html"
+    template_name = "shop/sale_form.html"
     success_url = reverse_lazy("sale-list")
     form_title = "Edit Sale"
 
@@ -335,10 +340,11 @@ def sales_report(request):
         writer = csv.writer(response)
         writer.writerow(["Date", "Staff", "Service", "Category", "Gross Sale", "Commission", "Shop Net", "Payment"])
         for sale in sales:
+            staff_name = sale.staff.full_name if sale.staff_id else sale.staff_snapshot_name
             writer.writerow(
                 [
                     sale.date.strftime("%Y-%m-%d %H:%M"),
-                    sale.staff.full_name,
+                    staff_name,
                     sale.service.name,
                     sale.service.category,
                     sale.price,

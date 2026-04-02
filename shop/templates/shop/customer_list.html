@@ -1,0 +1,38 @@
+{% extends 'shop/base.html' %}
+{% block title %}Customers | Garden City Fine Cuts{% endblock %}
+{% block content %}
+<div class="mb-8 flex items-end justify-between gap-4">
+    <div>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Loyalty</p>
+        <h1 class="mt-3 font-display text-4xl font-bold text-white">Customers</h1>
+    </div>
+</div>
+<section class="glass-card rounded-3xl p-6 table-shell">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Points</th>
+                <th>Tier</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in customers %}
+                <tr>
+                    <td>{{ c.first_name }} {{ c.last_name }}</td>
+                    <td>{{ c.email }}</td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.points_balance }}</td>
+                    <td>{{ c.get_tier_display }}</td>
+                    <td><a href="{% url 'barber-note-add' c.pk %}" class="text-amber-300">Add ledger note</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6" class="text-zinc-400">No customers yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

@@ -11,6 +11,7 @@ class User(AbstractUser):
         ADMIN = "admin", "Admin"
         MANAGER = "manager", "Manager"
         STAFF = "staff", "Staff"
+        CUSTOMER = "customer", "Customer"
 
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255)
@@ -29,6 +30,8 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if self.role in {self.Roles.ADMIN, self.Roles.MANAGER}:
             self.is_staff = True
+        if self.role == self.Roles.CUSTOMER:
+            self.is_staff = False
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -73,6 +76,13 @@ class Appointment(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointments",
+    )
     customer_name = models.CharField(max_length=150)
     customer_email = models.EmailField()
     customer_phone = models.CharField(max_length=50)
@@ -85,13 +95,22 @@ class Appointment(models.Model):
         blank=True,
         limit_choices_to={"role__in": [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]},
     )
+    staff_snapshot_name = models.CharField(max_length=255, blank=True, help_text="Preserved if staff account is removed.")
     appointment_at = models.DateTimeField()
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["appointment_at"]
+
+    def save(self, *args, **kwargs):
+        if self.status == self.Status.COMPLETED and self.completed_at is None:
+            self.completed_at = timezone.now()
+        if self.staff_id and self.staff:
+            self.staff_snapshot_name = self.staff.full_name
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.customer_name} - {self.service.name}"
@@ -99,12 +118,29 @@ class Appointment(models.Model):
 
 class Sale(models.Model):
     service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name="sales")
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+    appointment = models.ForeignKey(
+        "Appointment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
     staff = models.ForeignKey(
         User,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="sales",
         limit_choices_to={"role__in": [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]},
     )
+    staff_snapshot_name = models.CharField(max_length=255, blank=True, help_text="Preserved if staff account is removed.")
     price = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     date = models.DateTimeField(default=timezone.now)
@@ -113,8 +149,15 @@ class Sale(models.Model):
     class Meta:
         ordering = ["-date"]
 
+    def save(self, *args, **kwargs):
+        if self.staff_id and self.staff:
+            self.staff_snapshot_name = self.staff.full_name
+        super().save(*args, **kwargs)
+
     @property
     def commission_amount(self):
+        if not self.staff_id:
+            return Decimal("0.00")
         return (self.price * self.staff.commission_rate) / Decimal("100.00")
 
     @property
@@ -122,7 +165,8 @@ class Sale(models.Model):
         return self.price - self.commission_amount
 
     def __str__(self):
-        return f"{self.service.name} - {self.staff}"
+        who = self.staff.full_name if self.staff_id else self.staff_snapshot_name or "Staff"
+        return f"{self.service.name} - {who}"
 
 
 class Expense(models.Model):
@@ -156,3 +200,154 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.staff} payout - {self.amount}"
+
+
+class Customer(models.Model):
+    class Tier(models.TextChoices):
+        BRONZE = "bronze", "Bronze"
+        SILVER = "silver", "Silver"
+        GOLD = "gold", "Gold"
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="customer_profile",
+    )
+    email = models.EmailField(unique=True, db_index=True)
+    phone = models.CharField(max_length=50)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True)
+    referral_code = models.CharField(max_length=32, unique=True, db_index=True)
+    referred_by = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="referrals",
+    )
+    sms_opt_out = models.BooleanField(default=False)
+    points_balance = models.IntegerField(default=0)
+    tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.BRONZE)
+    last_visit_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}".strip() or self.email
+
+
+class LoyaltySettings(models.Model):
+    id = models.PositiveIntegerField(primary_key=True, default=1, editable=False)
+    points_per_visit = models.PositiveIntegerField(default=50)
+    points_per_dollar = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal("1.00"))
+    referral_bonus_referrer = models.PositiveIntegerField(default=100)
+    referral_bonus_referee = models.PositiveIntegerField(default=50)
+    shop_display_name = models.CharField(max_length=120, default="Garden City Fine Cuts")
+    booking_base_url = models.URLField(blank=True)
+    sms_retention_enabled = models.BooleanField(default=True)
+    sms_retention_days = models.PositiveIntegerField(default=21)
+    review_request_enabled = models.BooleanField(default=True)
+    review_request_hours_after = models.PositiveIntegerField(default=24)
+    review_bonus_points = models.PositiveIntegerField(default=25)
+    at_risk_days = models.PositiveIntegerField(
+        default=45,
+        help_text="Customers with no visit in this many days are flagged as at-risk.",
+    )
+    retention_sms_template = models.TextField(
+        default=(
+            "Hi {first_name}, it's been {weeks} weeks since your last visit at {shop_name}! "
+            "Book your next fresh cut here: {booking_link}"
+        ),
+        help_text="Placeholders: {first_name}, {shop_name}, {booking_link}, {weeks}, {retention_days}",
+    )
+    review_sms_template = models.TextField(
+        default=(
+            "Hi {first_name}, thanks for visiting {shop_name}. "
+            "Leave a Google or Yelp review — {review_bonus_points} bonus points on your next visit."
+        ),
+        help_text="Placeholders: {first_name}, {shop_name}, {review_bonus_points}",
+    )
+
+    def __str__(self):
+        return "Loyalty settings"
+
+
+class SlowHourWindow(models.Model):
+    name = models.CharField(max_length=100)
+    enabled = models.BooleanField(default=True)
+    weekday_start = models.PositiveSmallIntegerField(help_text="0=Monday ... 6=Sunday")
+    weekday_end = models.PositiveSmallIntegerField(help_text="Inclusive; same as start for single day.")
+    time_start = models.TimeField()
+    time_end = models.TimeField()
+    multiplier = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("2.00"))
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class PointsLedger(models.Model):
+    class EntryType(models.TextChoices):
+        VISIT = "visit", "Visit"
+        SPEND = "spend", "Spend"
+        REFERRAL_REFERRER = "referral_referrer", "Referral (Referrer)"
+        REFERRAL_REFEREE = "referral_referee", "Referral (New Customer)"
+        REVIEW_BONUS = "review_bonus", "Review Bonus"
+        ADJUSTMENT = "adjustment", "Adjustment"
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="ledger_entries")
+    points_delta = models.IntegerField()
+    balance_after = models.IntegerField()
+    entry_type = models.CharField(max_length=30, choices=EntryType.choices)
+    description = models.CharField(max_length=500, blank=True)
+    appointment = models.ForeignKey("Appointment", null=True, blank=True, on_delete=models.SET_NULL)
+    sale = models.ForeignKey("Sale", null=True, blank=True, on_delete=models.SET_NULL)
+    multiplier_applied = models.DecimalField(max_digits=6, decimal_places=3, default=Decimal("1.000"))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.customer} {self.points_delta:+d}"
+
+
+class ReferralCredit(models.Model):
+    referrer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="referrals_paid")
+    referee = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="referral_credit")
+    appointment = models.ForeignKey("Appointment", null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class CustomerBarberNote(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="barber_notes")
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="barber_notes")
+    note = models.TextField()
+    previous_cut_photo = models.ImageField(upload_to="ledger_cuts/%Y/%m/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class ReviewNudge(models.Model):
+    appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, related_name="review_nudge")
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    channel = models.CharField(max_length=20, default="sms")
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+
+class SMSLog(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="sms_logs", null=True, blank=True)
+    kind = models.CharField(max_length=30)
+    message_body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    success = models.BooleanField(default=True)
+    error_message = models.CharField(max_length=500, blank=True)

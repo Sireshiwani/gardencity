@@ -1,6 +1,18 @@
 from django.contrib.auth.views import LogoutView
 from django.urls import path
 
+from .loyalty_views import (
+    BarberNoteCreateView,
+    BarberNoteListView,
+    CustomerDashboardView,
+    CustomerListView,
+    LoyaltyOwnerReportView,
+    SlowHourCreateView,
+    SlowHourDeleteView,
+    SlowHourUpdateView,
+    customer_register,
+    loyalty_manage,
+)
 from .views import (
     DashboardView,
     ExpenseCreateView,
@@ -29,6 +41,16 @@ from .views import (
 urlpatterns = [
     path("", home, name="home"),
     path("book/", book_now, name="book-now"),
+    path("account/register/", customer_register, name="customer-register"),
+    path("account/", CustomerDashboardView.as_view(), name="customer-dashboard"),
+    path("customers/", CustomerListView.as_view(), name="customer-list"),
+    path("customers/<int:customer_pk>/notes/add/", BarberNoteCreateView.as_view(), name="barber-note-add"),
+    path("barber/notes/", BarberNoteListView.as_view(), name="barber-notes"),
+    path("loyalty/reports/", LoyaltyOwnerReportView.as_view(), name="loyalty-reports"),
+    path("loyalty/manage/", loyalty_manage, name="loyalty-manage"),
+    path("loyalty/slow-hours/add/", SlowHourCreateView.as_view(), name="slow-hour-create"),
+    path("loyalty/slow-hours/<int:pk>/edit/", SlowHourUpdateView.as_view(), name="slow-hour-edit"),
+    path("loyalty/slow-hours/<int:pk>/delete/", SlowHourDeleteView.as_view(), name="slow-hour-delete"),
     path("login/", StaffLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),

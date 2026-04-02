@@ -37,23 +37,36 @@
                 <nav class="flex items-center gap-5 text-sm text-zinc-300">
                     <a href="{% url 'home' %}" class="hover:text-amber-400">Home</a>
                     <a href="{% url 'book-now' %}" class="hover:text-amber-400">Book Now</a>
+                    <a href="{% url 'customer-register' %}" class="hover:text-amber-400">Rewards</a>
                     {% if request.user.is_authenticated %}
-                        <a href="{% url 'dashboard' %}" class="hover:text-amber-400">Dashboard</a>
-                        {% if request.user.role == 'admin' or request.user.role == 'manager' %}
-                            <a href="{% url 'staff-list' %}" class="hover:text-amber-400">Staff</a>
-                        {% endif %}
-                        {% if request.user.role == 'admin' or request.user.role == 'manager' %}
-                            <a href="{% url 'service-list' %}" class="hover:text-amber-400">Services</a>
-                            <a href="{% url 'sale-list' %}" class="hover:text-amber-400">Sales</a>
-                            <a href="{% url 'expense-list' %}" class="hover:text-amber-400">Expenses</a>
-                            <a href="{% url 'sales-report' %}" class="hover:text-amber-400">Reports</a>
+                        {% if request.user.role == 'customer' %}
+                            <a href="{% url 'customer-dashboard' %}" class="hover:text-amber-400">My Rewards</a>
+                        {% else %}
+                            <a href="{% url 'dashboard' %}" class="hover:text-amber-400">Dashboard</a>
+                            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                                <a href="{% url 'staff-list' %}" class="hover:text-amber-400">Staff</a>
+                            {% endif %}
+                            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                                <a href="{% url 'service-list' %}" class="hover:text-amber-400">Services</a>
+                                <a href="{% url 'sale-list' %}" class="hover:text-amber-400">Sales</a>
+                                <a href="{% url 'expense-list' %}" class="hover:text-amber-400">Expenses</a>
+                                <a href="{% url 'sales-report' %}" class="hover:text-amber-400">Reports</a>
+                            {% endif %}
+                            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                                <a href="{% url 'loyalty-manage' %}" class="hover:text-amber-400">Loyalty settings</a>
+                                <a href="{% url 'loyalty-reports' %}" class="hover:text-amber-400">Loyalty reports</a>
+                            {% endif %}
+                            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'staff' %}
+                                <a href="{% url 'customer-list' %}" class="hover:text-amber-400">Customers</a>
+                                <a href="{% url 'barber-notes' %}" class="hover:text-amber-400">Ledger</a>
+                            {% endif %}
                         {% endif %}
                         <form method="post" action="{% url 'logout' %}">
                             {% csrf_token %}
                             <button class="rounded-full border border-amber-500/50 px-4 py-2 text-amber-300 hover:bg-amber-500/10">Logout</button>
                         </form>
                     {% else %}
-                        <a href="{% url 'login' %}" class="rounded-full border border-amber-500/50 px-4 py-2 text-amber-300 hover:bg-amber-500/10">Staff Login</a>
+                        <a href="{% url 'login' %}" class="rounded-full border border-amber-500/50 px-4 py-2 text-amber-300 hover:bg-amber-500/10">Login</a>
                     {% endif %}
                 </nav>
             </div>

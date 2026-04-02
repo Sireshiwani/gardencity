@@ -87,3 +87,22 @@ LOGOUT_REDIRECT_URL = 'home'
 AUTH_USER_MODEL = 'shop.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "noreply@gardencityfinecuts.local"
+
+# --- SMS (pluggable) ---
+# Set SMS_BACKEND to any importable class path; subclass shop.services.sms_backends.BaseSMSBackend.
+# Defaults to console logging only (no external provider).
+SMS_BACKEND = "shop.services.sms_backends.ConsoleSMSBackend"
+# Optional dict passed as **kwargs to your backend class (for custom providers).
+SMS_BACKEND_OPTIONS = {}
+
+# Twilio — only used if SMS_BACKEND = "shop.services.sms_backends.TwilioSMSBackend"
+# (install optional dependency: pip install twilio)
+TWILIO_ACCOUNT_SID = ""
+TWILIO_AUTH_TOKEN = ""
+TWILIO_FROM_NUMBER = ""

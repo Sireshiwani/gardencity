@@ -12,6 +12,7 @@
         <thead>
             <tr>
                 <th>Service</th>
+                <th>Customer</th>
                 <th>Staff</th>
                 <th>Gross</th>
                 <th>Commission</th>
@@ -25,7 +26,8 @@
             {% for sale in sales %}
                 <tr>
                     <td>{{ sale.service.name }}</td>
-                    <td>{{ sale.staff.full_name }}</td>
+                    <td>{% if sale.customer %}{{ sale.customer.first_name }} {{ sale.customer.last_name }} ({{ sale.customer.email }}){% else %}—{% endif %}</td>
+                    <td>{% if sale.staff %}{{ sale.staff.full_name }}{% else %}{{ sale.staff_snapshot_name|default:"—" }}{% endif %}</td>
                     <td>${{ sale.price }}</td>
                     <td>${{ sale.commission_amount }}</td>
                     <td>${{ sale.shop_net }}</td>

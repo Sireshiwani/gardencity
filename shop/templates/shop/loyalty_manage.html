@@ -1,0 +1,170 @@
+{% extends 'shop/base.html' %}
+{% block title %}Loyalty settings | Garden City Fine Cuts{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Admin</p>
+        <h1 class="mt-3 font-display text-4xl font-bold text-white">Customer loyalty</h1>
+        <p class="mt-2 max-w-3xl text-zinc-400">Configure point earning, slow-hour multipliers, and SMS messages. Changes apply to new ledger entries and scheduled SMS jobs.</p>
+    </div>
+    <a href="{% url 'loyalty-reports' %}" class="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-zinc-300 hover:border-amber-400 hover:text-amber-300">View reports</a>
+</div>
+
+<form method="post" class="space-y-10">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">{{ form.non_field_errors|join:", " }}</div>
+    {% endif %}
+
+    <section class="glass-card rounded-3xl p-8">
+        <h2 class="font-display text-2xl font-bold text-white">Points — visits &amp; spend</h2>
+        <p class="mt-2 text-sm text-zinc-500">Visit and dollar points apply when an appointment is marked completed (and for walk-in sales without an appointment). Slow-hour windows multiply the total points for that event.</p>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.points_per_visit.label }}</label>
+                {{ form.points_per_visit }}
+                {% if form.points_per_visit.errors %}<p class="mt-1 text-sm text-red-300">{{ form.points_per_visit.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.points_per_dollar.label }}</label>
+                {{ form.points_per_dollar }}
+                <p class="mt-1 text-xs text-zinc-500">Points per $1 of service/sale amount (before multiplier).</p>
+                {% if form.points_per_dollar.errors %}<p class="mt-1 text-sm text-red-300">{{ form.points_per_dollar.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.referral_bonus_referrer.label }}</label>
+                {{ form.referral_bonus_referrer }}
+                {% if form.referral_bonus_referrer.errors %}<p class="mt-1 text-sm text-red-300">{{ form.referral_bonus_referrer.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.referral_bonus_referee.label }}</label>
+                {{ form.referral_bonus_referee }}
+                {% if form.referral_bonus_referee.errors %}<p class="mt-1 text-sm text-red-300">{{ form.referral_bonus_referee.errors|join:", " }}</p>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-8">
+        <h2 class="font-display text-2xl font-bold text-white">Shop &amp; booking links</h2>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="md:col-span-2">
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.shop_display_name.label }}</label>
+                {{ form.shop_display_name }}
+                {% if form.shop_display_name.errors %}<p class="mt-1 text-sm text-red-300">{{ form.shop_display_name.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.booking_base_url.label }}</label>
+                {{ form.booking_base_url }}
+                <p class="mt-1 text-xs text-zinc-500">Used as <code class="text-amber-200/80">{booking_link}</code> in SMS templates (full URL recommended).</p>
+                {% if form.booking_base_url.errors %}<p class="mt-1 text-sm text-red-300">{{ form.booking_base_url.errors|join:", " }}</p>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-8">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-white">Slow-hour windows</h2>
+                <p class="mt-2 text-sm text-zinc-500">When a completed visit or sale falls inside an <strong class="text-zinc-300">enabled</strong> window, points are multiplied by the value below (e.g. 2 = double). Add one row per rule (e.g. Tue–Wed 10:00–13:00).</p>
+            </div>
+            <a href="{% url 'slow-hour-create' %}" class="rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Add window</a>
+        </div>
+        <div class="mt-6 table-shell overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>On</th>
+                        <th>Time</th>
+                        <th>Multiplier</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in windows %}
+                        <tr>
+                            <td>{{ w.name }}{% if not w.enabled %} <span class="text-zinc-500">(off)</span>{% endif %}</td>
+                            <td class="text-zinc-400">{{ w.weekday_start }}–{{ w.weekday_end }}</td>
+                            <td>{{ w.time_start|time:"H:i" }} – {{ w.time_end|time:"H:i" }}</td>
+                            <td>{{ w.multiplier }}×</td>
+                            <td class="space-x-2">
+                                <a href="{% url 'slow-hour-edit' w.pk %}" class="text-amber-300">Edit</a>
+                                <a href="{% url 'slow-hour-delete' w.pk %}" class="text-red-300">Delete</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5" class="text-zinc-500">No windows yet — add one to boost points in quiet hours.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-8">
+        <h2 class="font-display text-2xl font-bold text-white">Retention SMS</h2>
+        <div class="mt-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
+            <strong class="text-zinc-200">When:</strong> daily job <code class="text-amber-200/90">loyalty_retention_sms</code> — customers whose <strong>last visit date</strong> is exactly <strong>{{ form.instance.sms_retention_days }} days</strong> ago (adjust below), with <strong>SMS opt-in</strong> and <strong>no upcoming</strong> appointment.
+        </div>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.sms_retention_enabled.label }}</label>
+                {{ form.sms_retention_enabled }}
+                {% if form.sms_retention_enabled.errors %}<p class="mt-1 text-sm text-red-300">{{ form.sms_retention_enabled.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.sms_retention_days.label }}</label>
+                {{ form.sms_retention_days }}
+                {% if form.sms_retention_days.errors %}<p class="mt-1 text-sm text-red-300">{{ form.sms_retention_days.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.retention_sms_template.label }}</label>
+                {{ form.retention_sms_template }}
+                <p class="mt-2 text-xs text-zinc-500">{{ form.retention_sms_template.help_text }}</p>
+                {% if form.retention_sms_template.errors %}<p class="mt-1 text-sm text-red-300">{{ form.retention_sms_template.errors|join:", " }}</p>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-8">
+        <h2 class="font-display text-2xl font-bold text-white">Review reminder SMS</h2>
+        <div class="mt-3 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-400">
+            <strong class="text-zinc-200">When:</strong> job <code class="text-amber-200/90">loyalty_review_nudges</code> — completed appointments where <strong>completed time</strong> is about <strong>{{ form.instance.review_request_hours_after }} hours</strong> ago (adjust below). One message per appointment.
+        </div>
+        <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.review_request_enabled.label }}</label>
+                {{ form.review_request_enabled }}
+                {% if form.review_request_enabled.errors %}<p class="mt-1 text-sm text-red-300">{{ form.review_request_enabled.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.review_request_hours_after.label }}</label>
+                {{ form.review_request_hours_after }}
+                {% if form.review_request_hours_after.errors %}<p class="mt-1 text-sm text-red-300">{{ form.review_request_hours_after.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.review_bonus_points.label }}</label>
+                {{ form.review_bonus_points }}
+                {% if form.review_bonus_points.errors %}<p class="mt-1 text-sm text-red-300">{{ form.review_bonus_points.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="md:col-span-2">
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.review_sms_template.label }}</label>
+                {{ form.review_sms_template }}
+                <p class="mt-2 text-xs text-zinc-500">{{ form.review_sms_template.help_text }}</p>
+                {% if form.review_sms_template.errors %}<p class="mt-1 text-sm text-red-300">{{ form.review_sms_template.errors|join:", " }}</p>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-8">
+        <h2 class="font-display text-2xl font-bold text-white">Reports — at-risk threshold</h2>
+        <div>
+            <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.at_risk_days.label }}</label>
+            {{ form.at_risk_days }}
+            <p class="mt-1 text-xs text-zinc-500">{{ form.at_risk_days.help_text }}</p>
+            {% if form.at_risk_days.errors %}<p class="mt-1 text-sm text-red-300">{{ form.at_risk_days.errors|join:", " }}</p>{% endif %}
+        </div>
+    </section>
+
+    <button type="submit" class="rounded-full bg-amber-500 px-8 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black">Save loyalty settings</button>
+</form>
+{% endblock %}

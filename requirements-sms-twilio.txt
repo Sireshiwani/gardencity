@@ -1,0 +1,4 @@
+# Optional: enable Twilio backend
+# In settings: SMS_BACKEND = "shop.services.sms_backends.TwilioSMSBackend"
+-r requirements.txt
+twilio>=8.0,<10

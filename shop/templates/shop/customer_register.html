@@ -1,0 +1,21 @@
+{% extends 'shop/base.html' %}
+{% block title %}Join Rewards | Garden City Fine Cuts{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-lg glass-card rounded-3xl p-8">
+    <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Rewards</p>
+    <h1 class="mt-3 font-display text-4xl font-bold text-white">Create your loyalty account</h1>
+    <p class="mt-3 text-zinc-400">Earn points on every visit and unlock tier benefits.</p>
+    <form method="post" class="mt-8 space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+            <div>
+                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="mt-1 text-sm text-red-300">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+        {% endfor %}
+        <button class="w-full rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black">Register</button>
+    </form>
+    <p class="mt-6 text-sm text-zinc-500">Already have an account? <a href="{% url 'login' %}" class="text-amber-300">Sign in</a></p>
+</div>
+{% endblock %}

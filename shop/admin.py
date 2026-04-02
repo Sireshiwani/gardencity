@@ -1,7 +1,22 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Appointment, Expense, Payment, Sale, Service, User
+from .models import (
+    Appointment,
+    Customer,
+    CustomerBarberNote,
+    Expense,
+    LoyaltySettings,
+    Payment,
+    PointsLedger,
+    ReferralCredit,
+    ReviewNudge,
+    SMSLog,
+    Sale,
+    Service,
+    SlowHourWindow,
+    User,
+)
 
 
 @admin.register(User)
@@ -9,10 +24,10 @@ class CustomUserAdmin(UserAdmin):
     model = User
     list_display = ("username", "full_name", "email", "role", "commission_rate", "is_active")
     fieldsets = UserAdmin.fieldsets + (
-        ("Barbershop", {"fields": ("full_name", "role", "commission_rate")}),
+        ("Barbershop", {"fields": ("full_name", "role", "commission_rate", "photo_url")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Barbershop", {"fields": ("full_name", "email", "role", "commission_rate")}),
+        ("Barbershop", {"fields": ("full_name", "email", "role", "commission_rate", "photo_url")}),
     )
 
 
@@ -24,8 +39,9 @@ class ServiceAdmin(admin.ModelAdmin):
 
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ("service", "staff", "price", "payment_method", "date")
+    list_display = ("service", "customer", "staff", "price", "payment_method", "date")
     list_filter = ("payment_method", "service__category")
+    raw_id_fields = ("customer", "appointment", "staff")
 
 
 @admin.register(Expense)
@@ -41,5 +57,64 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
-    list_display = ("customer_name", "service", "staff", "appointment_at", "status")
+    list_display = ("customer_name", "customer", "service", "staff", "appointment_at", "status", "completed_at")
     list_filter = ("status", "service")
+    raw_id_fields = ("customer", "staff", "service")
+
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ("email", "first_name", "last_name", "phone", "points_balance", "tier", "referral_code", "sms_opt_out")
+    search_fields = ("email", "phone", "first_name", "last_name", "referral_code")
+    raw_id_fields = ("user", "referred_by")
+
+
+@admin.register(LoyaltySettings)
+class LoyaltySettingsAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ("Points", {"fields": ("points_per_visit", "points_per_dollar", "referral_bonus_referrer", "referral_bonus_referee")}),
+        ("Shop", {"fields": ("shop_display_name", "booking_base_url")}),
+        ("Retention SMS", {"fields": ("sms_retention_enabled", "sms_retention_days", "retention_sms_template")}),
+        ("Review SMS", {"fields": ("review_request_enabled", "review_request_hours_after", "review_bonus_points", "review_sms_template")}),
+        ("Reports", {"fields": ("at_risk_days",)}),
+    )
+
+    def has_add_permission(self, request):
+        return not LoyaltySettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SlowHourWindow)
+class SlowHourWindowAdmin(admin.ModelAdmin):
+    list_display = ("name", "enabled", "weekday_start", "weekday_end", "time_start", "time_end", "multiplier")
+
+
+@admin.register(PointsLedger)
+class PointsLedgerAdmin(admin.ModelAdmin):
+    list_display = ("customer", "points_delta", "balance_after", "entry_type", "created_at")
+    list_filter = ("entry_type",)
+    raw_id_fields = ("customer", "appointment", "sale")
+
+
+@admin.register(ReferralCredit)
+class ReferralCreditAdmin(admin.ModelAdmin):
+    list_display = ("referrer", "referee", "created_at")
+
+
+@admin.register(CustomerBarberNote)
+class CustomerBarberNoteAdmin(admin.ModelAdmin):
+    list_display = ("customer", "author", "created_at")
+    raw_id_fields = ("customer", "author")
+
+
+@admin.register(ReviewNudge)
+class ReviewNudgeAdmin(admin.ModelAdmin):
+    list_display = ("appointment", "customer", "sent_at", "channel")
+
+
+@admin.register(SMSLog)
+class SMSLogAdmin(admin.ModelAdmin):
+    list_display = ("kind", "customer", "success", "sent_at")
+    list_filter = ("kind", "success")
