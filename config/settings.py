@@ -5,6 +5,13 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(BASE_DIR / ".env", override=False)
+except ImportError:
+    pass
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-2e2ko6a343tb3%==f70+6)8&nev#^5rj1-_)@&+63%vxarx*=^",
@@ -68,8 +75,9 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+# Production: set DATABASE_URL in the host (e.g. DigitalOcean links Managed Postgres and injects it).
+# Local: optional .env file (see .env.example); never commit real credentials.
 _database_url = (os.environ.get('DATABASE_URL') or '').strip()
-# DO/App Platform may define DATABASE_URL empty until a DB is linked; whitespace-only is truthy in Python.
 if _database_url:
     ssl_required = os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() in ('1', 'true', 'yes')
     DATABASES['default'] = dj_database_url.parse(
