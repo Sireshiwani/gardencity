@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import quote_plus
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -71,22 +72,45 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
+def _env_clean(key: str) -> str:
+    """Strip whitespace; treat unresolved DO bindables (literal ${...}) as unset."""
+    raw = (os.environ.get(key) or '').strip()
+    if not raw or ('${' in raw and '}' in raw):
+        return ''
+    return raw
+
+
+def _password_from_env() -> str:
+    """Read DB password; skip literal unresolved bindables like ``${db.PASSWORD}``."""
+    for key in ('POSTGRES_PASSWORD', 'PGPASSWORD'):
+        raw = (os.environ.get(key) or '').strip()
+        if not raw:
+            continue
+        if '${' in raw and '}' in raw:
+            continue
+        return raw
+    return ''
+
+
 def _resolve_database_url() -> str:
     """Resolve Postgres URL from env. See .env.example for DigitalOcean bindable variables."""
     for key in ('DATABASE_URL', 'DJANGO_DATABASE_URL'):
-        raw = (os.environ.get(key) or '').strip()
+        raw = _env_clean(key)
         if raw:
             return raw
-    user = (os.environ.get('POSTGRES_USER') or os.environ.get('PGUSER') or '').strip()
-    password = os.environ.get('POSTGRES_PASSWORD') or os.environ.get('PGPASSWORD') or ''
-    host = (os.environ.get('POSTGRES_HOST') or os.environ.get('PGHOST') or '').strip()
-    port = (os.environ.get('POSTGRES_PORT') or os.environ.get('PGPORT') or '5432').strip()
-    dbname = (os.environ.get('POSTGRES_DB') or os.environ.get('PGDATABASE') or '').strip()
+    user = _env_clean('POSTGRES_USER') or _env_clean('PGUSER')
+    host = _env_clean('POSTGRES_HOST') or _env_clean('PGHOST')
+    port = _env_clean('POSTGRES_PORT') or _env_clean('PGPORT') or '5432'
+    dbname = _env_clean('POSTGRES_DB') or _env_clean('PGDATABASE')
+    pwd_raw = _password_from_env()
     if user and host and dbname:
         q = quote_plus(user, safe='')
-        pq = quote_plus(password, safe='')
+        pq = quote_plus(pwd_raw, safe='')
         ssl = (os.environ.get('POSTGRES_SSLMODE') or 'require').strip()
-        return f'postgresql://{q}:{pq}@{host}:{port}/{dbname}?sslmode={ssl}'
+        if '${' in ssl:
+            ssl = 'require'
+        # postgres:// matches DigitalOcean / Heroku-style validators; dj-database-url accepts it.
+        return f'postgres://{q}:{pq}@{host}:{port}/{dbname}?sslmode={ssl}'
     return ''
 
 
@@ -99,12 +123,20 @@ DATABASES = {
 _database_url = _resolve_database_url()
 if _database_url:
     ssl_required = os.environ.get('DATABASE_SSL_REQUIRE', 'true').lower() in ('1', 'true', 'yes')
-    DATABASES['default'] = dj_database_url.parse(
-        _database_url,
-        conn_max_age=600,
-        conn_health_checks=True,
-        ssl_require=ssl_required,
-    )
+    try:
+        DATABASES['default'] = dj_database_url.parse(
+            _database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=ssl_required,
+        )
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            'Invalid DATABASE_URL. Use postgres://user:pass@host:port/dbname?sslmode=require. '
+            'On App Platform, if the value is the literal text ${db.DATABASE_URL}, the bindable '
+            'did not resolve — fix the database component name and scope (RUN_AND_BUILD_TIME), '
+            'or paste the full URL as an encrypted variable, or use discrete POSTGRES_* bindables.'
+        ) from exc
 
 AUTH_PASSWORD_VALIDATORS = [
     {
