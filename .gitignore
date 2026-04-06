@@ -6,3 +6,6 @@ staticfiles/
 .env
 .env.*
 !.env.example
+garden-pass.txt
+keynote
+keynote.pub
