@@ -1,8 +1,33 @@
 """Customer get/create helpers for bookings and registration."""
 from __future__ import annotations
 
-from shop.models import Customer
+import re
+
+from django.core.exceptions import ValidationError
+
+from shop.models import Customer, User
 from shop.services.loyalty import generate_referral_code
+
+
+def normalize_phone(phone: str) -> str:
+    digits = re.sub(r"\D", "", phone or "")
+    return digits
+
+
+def customer_username_from_phone(phone: str) -> str:
+    base = normalize_phone(phone)
+    if len(base) < 6:
+        raise ValidationError("Enter a valid phone number.")
+    candidate = base
+    if not User.objects.filter(username=candidate).exists():
+        return candidate
+    prefixed = f"c_{base}"
+    if not User.objects.filter(username=prefixed).exists():
+        return prefixed
+    n = 2
+    while User.objects.filter(username=f"{prefixed}_{n}").exists():
+        n += 1
+    return f"{prefixed}_{n}"
 
 
 def split_name(full_name: str) -> tuple[str, str]:

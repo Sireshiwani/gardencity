@@ -13,7 +13,7 @@ class User(AbstractUser):
         STAFF = "staff", "Staff"
         CUSTOMER = "customer", "Customer"
 
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=Roles.choices, default=Roles.STAFF)
     photo_url = models.URLField(blank=True, help_text="Public URL for this staff member's profile photo.")

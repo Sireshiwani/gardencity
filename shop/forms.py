@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, Set
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .customers import get_or_create_from_booking
+from .customers import customer_username_from_phone, get_or_create_from_booking, normalize_phone
 from .models import (
     Appointment,
     Customer,
@@ -73,18 +73,33 @@ class CustomerRegistrationForm(TailwindMixin, UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields["username"].widget = forms.HiddenInput()
         self.fields["username"].required = False
-        self.fields["email"].required = True
+        self.fields["email"].required = False
+        self.fields["email"].label = "Email (optional)"
+        self.fields["phone"].required = True
         self.fields["birthday"].widget.attrs.update(
             {"placeholder": "MM-DD", "inputmode": "numeric", "autocomplete": "bday-day"}
+        )
+        self.order_fields(
+            ["first_name", "last_name", "phone", "birthday", "email", "password1", "password2", "username"]
         )
         self.apply_tailwind()
 
     def clean(self):
         data = super().clean()
         email = (data.get("email") or "").strip().lower()
+        phone = normalize_phone((data.get("phone") or "").strip())
         birthday = (data.get("birthday") or "").strip()
+        if not phone:
+            raise ValidationError({"phone": "Phone number is required."})
         if email:
             data["username"] = email
+            if User.objects.filter(email__iexact=email).exists():
+                raise ValidationError({"email": "An account with this email already exists."})
+        else:
+            data["username"] = customer_username_from_phone(phone)
+        if Customer.objects.filter(phone=phone).exists():
+            raise ValidationError({"phone": "An account with this phone number already exists."})
+        data["phone"] = phone
         if birthday:
             try:
                 parsed = datetime.strptime(birthday, "%m-%d")
@@ -99,8 +114,10 @@ class CustomerRegistrationForm(TailwindMixin, UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = self.cleaned_data["email"].strip().lower()
-        user.email = user.username
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        phone = self.cleaned_data["phone"]
+        user.username = self.cleaned_data["username"]
+        user.email = email or None
         user.full_name = f"{self.cleaned_data['first_name']} {self.cleaned_data.get('last_name', '')}".strip()
         user.role = User.Roles.CUSTOMER
         user.is_staff = False
@@ -108,8 +125,8 @@ class CustomerRegistrationForm(TailwindMixin, UserCreationForm):
             user.save()
             Customer.objects.create(
                 user=user,
-                email=user.email,
-                phone=self.cleaned_data["phone"].strip(),
+                email=email or None,
+                phone=phone,
                 first_name=self.cleaned_data["first_name"].strip(),
                 last_name=(self.cleaned_data.get("last_name") or "").strip(),
                 birthday_month=self.cleaned_data.get("birthday_month"),
