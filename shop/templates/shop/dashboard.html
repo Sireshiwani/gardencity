@@ -3,12 +3,12 @@
 {% block content %}
 <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
-        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">{{ request.user.get_role_display }} Dashboard</p>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">{{ request.user.get_role_display }} Dashboard</p>
         <h1 class="mt-3 font-display text-4xl font-bold text-white">Welcome back, {{ request.user.full_name }}.</h1>
     </div>
     {% if request.user.role == 'admin' or request.user.role == 'manager' %}
         <div class="flex gap-3">
-            <a href="{% url 'sale-create' %}" class="rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Log Sale</a>
+            <a href="{% url 'sale-create' %}" class="rounded-full bg-gold px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Log Sale</a>
             <a href="{% url 'expense-create' %}" class="rounded-full border border-white/10 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white">Log Expense</a>
         </div>
     {% endif %}
@@ -16,74 +16,74 @@
 
 <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Today's Sales</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Today's Sales</p>
         <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ today_sales }}</h2>
     </div>
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">This Month's Sales</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">This Month's Sales</p>
         <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ month_sales }}</h2>
     </div>
     {% if request.user.role == 'admin' or request.user.role == 'manager' %}
         <div class="glass-card rounded-3xl p-6">
-            <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">This Month's Expenses</p>
+            <p class="text-sm uppercase tracking-[0.2em] text-gray-400">This Month's Expenses</p>
             <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ month_expenses }}</h2>
         </div>
     {% endif %}
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">My Commission</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">My Commission</p>
         <h2 class="mt-4 font-display text-4xl font-bold">{{ CURRENCY }} {{ personal_commission }}</h2>
     </div>
 </section>
 
-<section class="mt-8 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+<section class="mt-8 grid gap-6 lg:grid-cols-2 2xl:grid-cols-[1.4fr_0.6fr]">
     <div class="glass-card rounded-3xl p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Sales Trend</p>
+                <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Sales Trend</p>
                 <h2 class="mt-2 font-display text-2xl font-bold text-white">Monthly performance</h2>
             </div>
         </div>
         <canvas id="dailySalesChart" height="120"></canvas>
     </div>
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Top Performing Staff</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Top Performing Staff</p>
         <h2 class="mt-2 font-display text-2xl font-bold text-white">Leaderboard</h2>
         <div class="mt-6 space-y-4">
             {% for item in leaderboard %}
                 <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
                     <div class="flex items-center justify-between">
                         <span class="font-display text-lg text-white">{{ item.staff__full_name }}</span>
-                        <span class="text-amber-300">{{ CURRENCY }} {{ item.total_sales }}</span>
+                        <span class="text-yellow-500">{{ CURRENCY }} {{ item.total_sales }}</span>
                     </div>
-                    <p class="mt-1 text-sm text-zinc-400">{{ item.transactions }} transactions</p>
+                    <p class="mt-1 text-sm text-gray-400">{{ item.transactions }} transactions</p>
                 </div>
             {% empty %}
-                <p class="text-zinc-400">No sales data yet.</p>
+                <p class="text-gray-400">No sales data yet.</p>
             {% endfor %}
         </div>
     </div>
 </section>
 
-<section class="mt-8 grid gap-6 xl:grid-cols-2">
+<section class="mt-8 grid gap-6 lg:grid-cols-2">
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Sales By Category</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Sales By Category</p>
         <h2 class="mt-2 font-display text-2xl font-bold text-white">Category mix</h2>
         <canvas id="categoryChart" height="140" class="mt-6"></canvas>
     </div>
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Upcoming Appointments</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Upcoming Appointments</p>
         <h2 class="mt-2 font-display text-2xl font-bold text-white">Next bookings</h2>
         <div class="mt-6 space-y-4">
             {% for appointment in upcoming_appointments %}
                 <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
                     <div class="flex items-center justify-between">
                         <span class="font-display text-lg text-white">{{ appointment.customer_name }}</span>
-                        <span class="text-sm text-zinc-400">{{ appointment.appointment_at|date:"M d, H:i" }}</span>
+                        <span class="text-sm text-gray-400">{{ appointment.appointment_at|date:"M d, H:i" }}</span>
                     </div>
-                    <p class="mt-1 text-sm text-zinc-400">{{ appointment.service.name }}{% if appointment.staff %} with {{ appointment.staff.full_name }}{% endif %}</p>
+                    <p class="mt-1 text-sm text-gray-400">{{ appointment.service.name }}{% if appointment.staff %} with {{ appointment.staff.full_name }}{% endif %}</p>
                 </div>
             {% empty %}
-                <p class="text-zinc-400">No upcoming appointments.</p>
+                <p class="text-gray-400">No upcoming appointments.</p>
             {% endfor %}
         </div>
     </div>
@@ -92,7 +92,7 @@
 <section class="mt-8 glass-card rounded-3xl p-6 table-shell">
     <div class="mb-6 flex items-center justify-between">
         <div>
-            <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Recent Sales</p>
+            <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Recent Sales</p>
             <h2 class="mt-2 font-display text-2xl font-bold text-white">Latest transactions</h2>
         </div>
     </div>
@@ -118,12 +118,16 @@
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="6" class="text-zinc-400">No recent sales yet.</td></tr>
+                <tr><td colspan="6" class="text-gray-400">No recent sales yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </section>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {{ category_chart|json_script:"category-chart-data" }}
 {{ daily_chart|json_script:"daily-chart-data" }}
 <script>
@@ -136,13 +140,13 @@
             labels: categoryData.labels,
             datasets: [{
                 data: categoryData.values,
-                backgroundColor: ["#d6a45f", "#b88948", "#7c5c32", "#f3d19c", "#5d513f"],
-                borderColor: "#111111",
+                backgroundColor: ["#D4A017", "#8B5E3C", "#5d513f", "#e6b422", "#3d3428"],
+                borderColor: "#0b0b0b",
                 borderWidth: 3,
             }],
         },
         options: {
-            plugins: { legend: { labels: { color: "#d4d4d8" } } }
+            plugins: { legend: { labels: { color: "#d1d5db" } } }
         }
     });
 
@@ -153,16 +157,16 @@
             datasets: [{
                 label: "Sales",
                 data: dailyData.values,
-                backgroundColor: "#b88948",
+                backgroundColor: "#D4A017",
                 borderRadius: 12,
             }],
         },
         options: {
             scales: {
-                x: { ticks: { color: "#d4d4d8" }, grid: { color: "rgba(255,255,255,0.05)" } },
-                y: { ticks: { color: "#d4d4d8" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                x: { ticks: { color: "#d1d5db" }, grid: { color: "rgba(255,255,255,0.05)" } },
+                y: { ticks: { color: "#d1d5db" }, grid: { color: "rgba(255,255,255,0.05)" } },
             },
-            plugins: { legend: { labels: { color: "#d4d4d8" } } }
+            plugins: { legend: { labels: { color: "#d1d5db" } } }
         }
     });
 </script>

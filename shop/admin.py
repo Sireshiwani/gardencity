@@ -13,6 +13,8 @@ from .models import (
     ReviewNudge,
     SMSLog,
     Sale,
+    SalaryAdvance,
+    SalaryAdvanceRepayment,
     Service,
     SlowHourWindow,
     User,
@@ -52,7 +54,7 @@ class ExpenseAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
-    list_display = ("staff", "amount", "date", "period_start", "period_end")
+    list_display = ("staff", "gross_amount", "advance_deduction", "amount", "date", "period_start", "period_end")
 
 
 @admin.register(Appointment)
@@ -64,7 +66,18 @@ class AppointmentAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ("email", "first_name", "last_name", "phone", "points_balance", "tier", "referral_code", "sms_opt_out")
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "phone",
+        "birthday_month",
+        "birthday_day",
+        "points_balance",
+        "tier",
+        "referral_code",
+        "sms_opt_out",
+    )
     search_fields = ("email", "phone", "first_name", "last_name", "referral_code")
     raw_id_fields = ("user", "referred_by")
 
@@ -118,3 +131,16 @@ class ReviewNudgeAdmin(admin.ModelAdmin):
 class SMSLogAdmin(admin.ModelAdmin):
     list_display = ("kind", "customer", "success", "sent_at")
     list_filter = ("kind", "success")
+
+
+@admin.register(SalaryAdvance)
+class SalaryAdvanceAdmin(admin.ModelAdmin):
+    list_display = ("staff", "requested_amount", "approved_amount", "outstanding_balance", "status", "requested_at")
+    list_filter = ("status",)
+    raw_id_fields = ("staff", "approved_by")
+
+
+@admin.register(SalaryAdvanceRepayment)
+class SalaryAdvanceRepaymentAdmin(admin.ModelAdmin):
+    list_display = ("advance", "payment", "amount", "applied_at")
+    raw_id_fields = ("advance", "payment")

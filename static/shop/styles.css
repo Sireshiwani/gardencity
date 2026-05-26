@@ -1,11 +1,83 @@
+:root {
+    --gold: #d4a017;
+    --dark: #0b0b0b;
+    --glass: rgba(255, 255, 255, 0.03);
+    --page-padding: clamp(1.25rem, 3.5vw, 4.5rem);
+}
+
+.page-container {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--page-padding);
+    padding-right: var(--page-padding);
+    box-sizing: border-box;
+}
+
 body {
+    background-color: var(--dark);
+    color: #f5f5f5;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
     letter-spacing: 0.01em;
 }
 
+h1,
+h2,
+h3,
+.font-display {
+    font-family: "Playfair Display", Georgia, serif;
+}
+
+.hero-gradient {
+    background:
+        radial-gradient(circle at top left, rgba(212, 160, 23, 0.15), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(139, 94, 60, 0.15), transparent 30%),
+        #050505;
+}
+
+.glass {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .glass-card {
-    background: rgba(24, 24, 27, 0.72);
+    background: var(--glass);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    border-radius: 1.5rem;
+    transition: all 0.4s ease;
+}
+
+.glass-card:hover {
+    border-color: var(--gold);
+    background: rgba(212, 160, 23, 0.05);
+}
+
+.text-gold-gradient {
+    background: linear-gradient(to right, #d4a017, #8b5e3c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.gold-text {
+    color: #d4a017;
+}
+
+.step-dot {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.04);
+    color: #d1d5db;
+}
+
+.step-dot.active {
+    border-color: var(--gold);
+    background: rgba(212, 160, 23, 0.2);
+    color: #fff;
 }
 
 .table-shell table {
@@ -21,8 +93,19 @@ body {
 }
 
 .table-shell th {
-    color: #f5d7a4;
+    color: #d4a017;
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
+}
+
+@media (max-width: 768px) {
+    .table-shell {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-shell table {
+        min-width: 680px;
+    }
 }

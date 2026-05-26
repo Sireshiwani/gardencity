@@ -2,24 +2,24 @@
 {% block content %}
 <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Expense Report</p>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Expense Report</p>
         <h1 class="mt-3 font-display text-4xl font-bold text-white">Categorized operating costs and spend trends.</h1>
     </div>
-    <a href="?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&range=custom&export=csv" class="rounded-full border border-amber-500/50 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Export CSV</a>
+    <a href="?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&range=custom&export=csv" class="rounded-full border border-gold/50 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-yellow-500">Export CSV</a>
 </div>
 
 <form class="mt-8 grid gap-4 rounded-3xl border border-white/10 bg-black/20 p-6 md:grid-cols-4">
     <input type="hidden" name="range" value="custom">
     <div>
-        <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">Start</label>
-        <input type="date" name="start" value="{{ start|date:'Y-m-d' }}" class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-100">
+        <label class="text-sm uppercase tracking-[0.18em] text-gray-400">Start</label>
+        <input type="date" name="start" value="{{ start|date:'Y-m-d' }}" class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-gray-100">
     </div>
     <div>
-        <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">End</label>
-        <input type="date" name="end" value="{{ end|date:'Y-m-d' }}" class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-zinc-100">
+        <label class="text-sm uppercase tracking-[0.18em] text-gray-400">End</label>
+        <input type="date" name="end" value="{{ end|date:'Y-m-d' }}" class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-gray-100">
     </div>
     <div class="flex items-end">
-        <button class="rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Apply</button>
+        <button class="rounded-full bg-gold px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Apply</button>
     </div>
 </form>
 

@@ -1,0 +1,21 @@
+# /etc/systemd/system/finecuts-django.service
+# Adjust User, paths, and env file to your VPS layout.
+
+[Unit]
+Description=Garden City Fine Cuts (Django / Gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/gardencity
+EnvironmentFile=/var/www/gardencity/.env
+ExecStart=/var/www/gardencity/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 2 \
+    --timeout 120
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

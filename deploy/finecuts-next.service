@@ -1,0 +1,20 @@
+# /etc/systemd/system/finecuts-next.service
+# Next.js marketing site (finecuts2 repo)
+
+[Unit]
+Description=Fine Cuts marketing site (Next.js)
+After=network.target finecuts-django.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/finecuts2
+EnvironmentFile=/var/www/finecuts2/.env.production
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

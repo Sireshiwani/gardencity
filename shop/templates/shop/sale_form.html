@@ -2,8 +2,8 @@
 {% block content %}
 <div class="mx-auto max-w-3xl glass-card rounded-3xl p-8">
     <h1 class="font-display text-4xl font-bold text-white">{{ form_title }}</h1>
-    <p class="mt-3 text-sm text-zinc-400">
-        Link this sale to a customer for loyalty points. If they are not in the system yet, leave <span class="text-zinc-300">Existing customer</span> empty and fill in <span class="text-zinc-300">New customer</span> below.
+    <p class="mt-3 text-sm text-gray-400">
+        Link this sale to a customer for loyalty points. If they are not in the system yet, leave <span class="text-gray-300">Existing customer</span> empty and fill in <span class="text-gray-300">New customer</span> below.
     </p>
     <form method="post" class="mt-8 space-y-8">
         {% csrf_token %}
@@ -15,44 +15,44 @@
 
         <div class="grid gap-4 md:grid-cols-2">
             <div>
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.service.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.service.label }}</label>
                 {{ form.service }}
                 {% if form.service.errors %}<p class="mt-1 text-sm text-red-300">{{ form.service.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.staff.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.staff.label }}</label>
                 {{ form.staff }}
                 {% if form.staff.errors %}<p class="mt-1 text-sm text-red-300">{{ form.staff.errors|join:", " }}</p>{% endif %}
             </div>
         </div>
 
         <div>
-            <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.customer.label }}</label>
+            <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.customer.label }}</label>
             {{ form.customer }}
             {% if form.customer.errors %}<p class="mt-1 text-sm text-red-300">{{ form.customer.errors|join:", " }}</p>{% endif %}
         </div>
 
-        <div class="rounded-2xl border border-amber-500/20 bg-black/20 p-6">
-            <p class="font-display text-sm uppercase tracking-[0.25em] text-amber-400">New customer</p>
-            <p class="mt-2 text-xs text-zinc-500">Only if they are not in the list above. Do not fill this if you selected an existing customer.</p>
+        <div class="rounded-2xl border border-gold/20 bg-black/20 p-6">
+            <p class="font-display text-sm uppercase tracking-[0.25em] text-yellow-500">New customer</p>
+            <p class="mt-2 text-xs text-gray-500">Only if they are not in the list above. First name and phone are required; email is optional. Do not fill this if you selected an existing customer.</p>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
-                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.new_first_name.label }}</label>
+                    <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.new_first_name.label }}</label>
                     {{ form.new_first_name }}
                     {% if form.new_first_name.errors %}<p class="mt-1 text-sm text-red-300">{{ form.new_first_name.errors|join:", " }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.new_last_name.label }}</label>
+                    <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.new_last_name.label }}</label>
                     {{ form.new_last_name }}
                     {% if form.new_last_name.errors %}<p class="mt-1 text-sm text-red-300">{{ form.new_last_name.errors|join:", " }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.new_email.label }}</label>
+                    <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.new_email.label }}</label>
                     {{ form.new_email }}
                     {% if form.new_email.errors %}<p class="mt-1 text-sm text-red-300">{{ form.new_email.errors|join:", " }}</p>{% endif %}
                 </div>
                 <div>
-                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.new_phone.label }}</label>
+                    <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.new_phone.label }}</label>
                     {{ form.new_phone }}
                     {% if form.new_phone.errors %}<p class="mt-1 text-sm text-red-300">{{ form.new_phone.errors|join:", " }}</p>{% endif %}
                 </div>
@@ -61,34 +61,34 @@
 
         <div class="grid gap-4 md:grid-cols-2">
             <div class="md:col-span-2">
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.appointment.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.appointment.label }}</label>
                 {{ form.appointment }}
                 {% if form.appointment.errors %}<p class="mt-1 text-sm text-red-300">{{ form.appointment.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.price.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.price.label }}</label>
                 {{ form.price }}
                 {% if form.price.errors %}<p class="mt-1 text-sm text-red-300">{{ form.price.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.payment_method.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.payment_method.label }}</label>
                 {{ form.payment_method }}
                 {% if form.payment_method.errors %}<p class="mt-1 text-sm text-red-300">{{ form.payment_method.errors|join:", " }}</p>{% endif %}
             </div>
             <div>
-                <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.date.label }}</label>
+                <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.date.label }}</label>
                 {{ form.date }}
                 {% if form.date.errors %}<p class="mt-1 text-sm text-red-300">{{ form.date.errors|join:", " }}</p>{% endif %}
             </div>
         </div>
 
         <div>
-            <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ form.notes.label }}</label>
+            <label class="text-sm uppercase tracking-[0.18em] text-gray-400">{{ form.notes.label }}</label>
             {{ form.notes }}
             {% if form.notes.errors %}<p class="mt-1 text-sm text-red-300">{{ form.notes.errors|join:", " }}</p>{% endif %}
         </div>
 
-        <button type="submit" class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Save</button>
+        <button type="submit" class="rounded-full bg-gold px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-yellow-500">Save</button>
     </form>
 </div>
 {% endblock %}

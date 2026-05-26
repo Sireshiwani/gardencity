@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import LoginView
+from django.db import transaction
 from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse
@@ -14,18 +15,22 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
+from .site_urls import public_site_url, redirect_to_public_site
 from .forms import (
     ExpenseForm,
     LoginForm,
+    PaymentCreateForm,
     PublicBookingForm,
     SaleForm,
+    SalaryAdvanceDecisionForm,
+    SalaryAdvanceRequestForm,
     ServicePhotoUpdateForm,
     ServiceForm,
     StaffPhotoUpdateForm,
     StaffUserCreationForm,
     StaffUserUpdateForm,
 )
-from .models import Appointment, Expense, Payment, Sale, Service, User
+from .models import Appointment, Expense, Payment, Sale, SalaryAdvance, SalaryAdvanceRepayment, Service, User
 
 
 class RoleRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -41,6 +46,10 @@ class AdminRequiredMixin(RoleRequiredMixin):
 
 class ManagerOrAdminRequiredMixin(RoleRequiredMixin):
     allowed_roles = [User.Roles.ADMIN, User.Roles.MANAGER]
+
+
+class StaffOrAboveRequiredMixin(RoleRequiredMixin):
+    allowed_roles = [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]
 
 
 class FormTitleMixin:
@@ -78,6 +87,33 @@ def daterange_from_request(request):
     return filter_type, start, end
 
 
+def apply_salary_advance_deductions(payment: Payment, gross_amount: Decimal) -> Decimal:
+    outstanding = SalaryAdvance.objects.select_for_update().filter(
+        staff=payment.staff,
+        status__in=[SalaryAdvance.Status.APPROVED, SalaryAdvance.Status.PARTIALLY_REPAID],
+        outstanding_balance__gt=Decimal("0.00"),
+    )
+    deduction_remaining = gross_amount
+    total_deducted = Decimal("0.00")
+    for advance in outstanding.order_by("approved_at", "requested_at"):
+        if deduction_remaining <= Decimal("0.00"):
+            break
+        to_apply = min(advance.outstanding_balance, deduction_remaining)
+        if to_apply <= Decimal("0.00"):
+            continue
+        SalaryAdvanceRepayment.objects.create(advance=advance, payment=payment, amount=to_apply)
+        advance.outstanding_balance -= to_apply
+        advance.status = (
+            SalaryAdvance.Status.REPAID
+            if advance.outstanding_balance <= Decimal("0.00")
+            else SalaryAdvance.Status.PARTIALLY_REPAID
+        )
+        advance.save(update_fields=["outstanding_balance", "status"])
+        deduction_remaining -= to_apply
+        total_deducted += to_apply
+    return total_deducted
+
+
 class StaffLoginView(LoginView):
     template_name = "shop/login.html"
     authentication_form = LoginForm
@@ -93,10 +129,31 @@ class StaffLoginView(LoginView):
 
 
 def home(request):
-    services = Service.objects.filter(is_active=True)[:6]
-    team = User.objects.filter(role=User.Roles.STAFF)[:4]
-    form = PublicBookingForm()
-    return render(request, "shop/home.html", {"services": services, "team": team, "form": form})
+    services = Service.objects.filter(is_active=True).order_by("category", "name")[:3]
+    team = User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")[:3]
+    team_all = User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")
+    booking_services = Service.objects.filter(is_active=True).order_by("category", "name")
+    services_payload = [
+        {
+            "id": s.id,
+            "name": s.name,
+            "price": str(s.price),
+            "description": s.description,
+        }
+        for s in booking_services
+    ]
+    team_payload = [{"id": u.id, "name": u.full_name} for u in team_all]
+    return render(
+        request,
+        "shop/home.html",
+        {
+            "services": services,
+            "team": team,
+            "team_all": team_all,
+            "services_payload": services_payload,
+            "team_payload": team_payload,
+        },
+    )
 
 
 def book_now(request):
@@ -105,7 +162,7 @@ def book_now(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Your appointment request has been submitted.")
-            return redirect("home")
+            return redirect(reverse("home") + "#booking")
     else:
         form = PublicBookingForm()
     return render(request, "shop/booking.html", {"form": form})
@@ -321,6 +378,101 @@ class ExpenseDeleteView(AdminRequiredMixin, DeleteView):
     model = Expense
     template_name = "shop/confirm_delete.html"
     success_url = reverse_lazy("expense-list")
+
+
+class PaymentListView(ManagerOrAdminRequiredMixin, ListView):
+    model = Payment
+    template_name = "shop/payment_list.html"
+    context_object_name = "payments"
+
+    def get_queryset(self):
+        return Payment.objects.select_related("staff").order_by("-date")
+
+
+class PaymentCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
+    model = Payment
+    form_class = PaymentCreateForm
+    template_name = "shop/form.html"
+    success_url = reverse_lazy("payment-list")
+    form_title = "Log Payout"
+
+    @transaction.atomic
+    def form_valid(self, form):
+        gross_amount = form.cleaned_data["amount"]
+        payment = form.save(commit=False)
+        payment.gross_amount = gross_amount
+        payment.advance_deduction = Decimal("0.00")
+        payment.amount = gross_amount
+        payment.save()
+        deducted = apply_salary_advance_deductions(payment, gross_amount)
+        if deducted > Decimal("0.00"):
+            payment.advance_deduction = deducted
+            payment.amount = gross_amount - deducted
+            payment.save(update_fields=["advance_deduction", "amount"])
+            messages.success(
+                self.request,
+                f"Payout saved. {deducted} was auto-deducted for salary advance repayment.",
+            )
+        else:
+            messages.success(self.request, "Payout saved.")
+        return redirect(self.success_url)
+
+
+class SalaryAdvanceListView(StaffOrAboveRequiredMixin, ListView):
+    model = SalaryAdvance
+    template_name = "shop/salary_advance_list.html"
+    context_object_name = "advances"
+
+    def get_queryset(self):
+        qs = SalaryAdvance.objects.select_related("staff", "approved_by")
+        if self.request.user.role == User.Roles.STAFF:
+            qs = qs.filter(staff=self.request.user)
+        return qs
+
+
+class SalaryAdvanceCreateView(StaffOrAboveRequiredMixin, FormTitleMixin, CreateView):
+    model = SalaryAdvance
+    form_class = SalaryAdvanceRequestForm
+    template_name = "shop/form.html"
+    success_url = reverse_lazy("salary-advance-list")
+    form_title = "Request Salary Advance"
+
+    def form_valid(self, form):
+        advance = form.save(commit=False)
+        advance.staff = self.request.user
+        advance.status = SalaryAdvance.Status.PENDING
+        advance.outstanding_balance = Decimal("0.00")
+        advance.save()
+        messages.success(self.request, "Salary advance request submitted.")
+        return redirect(self.success_url)
+
+
+class SalaryAdvanceReviewView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
+    model = SalaryAdvance
+    form_class = SalaryAdvanceDecisionForm
+    template_name = "shop/form.html"
+    success_url = reverse_lazy("salary-advance-list")
+    form_title = "Review Salary Advance"
+
+    @transaction.atomic
+    def form_valid(self, form):
+        advance = form.save(commit=False)
+        status = form.cleaned_data["status"]
+        approved_amount = form.cleaned_data.get("approved_amount")
+        if status == SalaryAdvance.Status.APPROVED:
+            advance.approved_amount = approved_amount
+            if advance.status == SalaryAdvance.Status.PENDING:
+                advance.outstanding_balance = approved_amount
+            advance.approved_by = self.request.user
+            advance.approved_at = timezone.now()
+        elif status in [SalaryAdvance.Status.REJECTED, SalaryAdvance.Status.CANCELLED]:
+            advance.approved_amount = None
+            advance.outstanding_balance = Decimal("0.00")
+            advance.approved_by = self.request.user
+            advance.approved_at = timezone.now()
+        advance.save()
+        messages.success(self.request, "Salary advance updated.")
+        return redirect(self.success_url)
 
 
 def sales_report(request):

@@ -14,8 +14,9 @@ def split_name(full_name: str) -> tuple[str, str]:
     return parts[0], parts[1]
 
 
-def get_or_create_from_booking(*, full_name: str, email: str, phone: str, referral_code: str | None = None) -> Customer:
-    email_norm = email.strip().lower()
+def get_or_create_from_booking(
+    *, full_name: str, email: str | None, phone: str, referral_code: str | None = None
+) -> Customer:
     phone_norm = phone.strip()
     first, last = split_name(full_name)
 
@@ -24,16 +25,36 @@ def get_or_create_from_booking(*, full_name: str, email: str, phone: str, referr
     if code:
         referrer = Customer.objects.filter(referral_code__iexact=code).first()
 
-    customer, created = Customer.objects.get_or_create(
-        email=email_norm,
-        defaults={
-            "phone": phone_norm,
-            "first_name": first,
-            "last_name": last,
-            "referral_code": generate_referral_code(),
-            "referred_by": referrer,
-        },
-    )
+    raw_email = (email or "").strip()
+    email_norm = raw_email.lower() if raw_email else ""
+
+    if email_norm:
+        customer, created = Customer.objects.get_or_create(
+            email=email_norm,
+            defaults={
+                "phone": phone_norm,
+                "first_name": first,
+                "last_name": last,
+                "referral_code": generate_referral_code(),
+                "referred_by": referrer,
+            },
+        )
+    else:
+        existing = Customer.objects.filter(phone=phone_norm).first()
+        if existing:
+            customer = existing
+            created = False
+        else:
+            customer = Customer.objects.create(
+                email=None,
+                phone=phone_norm,
+                first_name=first,
+                last_name=last,
+                referral_code=generate_referral_code(),
+                referred_by=referrer,
+            )
+            created = True
+
     if not created:
         Customer.objects.filter(pk=customer.pk).update(
             phone=phone_norm or customer.phone,

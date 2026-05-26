@@ -84,7 +84,7 @@ class Appointment(models.Model):
         related_name="appointments",
     )
     customer_name = models.CharField(max_length=150)
-    customer_email = models.EmailField()
+    customer_email = models.EmailField(blank=True)
     customer_phone = models.CharField(max_length=50)
     service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name="appointments")
     staff = models.ForeignKey(
@@ -190,6 +190,8 @@ class Payment(models.Model):
         limit_choices_to={"role__in": [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]},
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    gross_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    advance_deduction = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     date = models.DateField(default=timezone.localdate)
     period_start = models.DateField()
     period_end = models.DateField()
@@ -215,10 +217,20 @@ class Customer(models.Model):
         blank=True,
         related_name="customer_profile",
     )
-    email = models.EmailField(unique=True, db_index=True)
+    email = models.EmailField(unique=True, db_index=True, blank=True, null=True)
     phone = models.CharField(max_length=50)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100, blank=True)
+    birthday_month = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+    )
+    birthday_day = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(31)],
+    )
     referral_code = models.CharField(max_length=32, unique=True, db_index=True)
     referred_by = models.ForeignKey(
         "self",
@@ -238,7 +250,12 @@ class Customer(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}".strip() or self.email
+        name = f"{self.first_name} {self.last_name}".strip()
+        if name:
+            return name
+        if self.email:
+            return self.email
+        return self.phone or "Customer"
 
 
 class LoyaltySettings(models.Model):
@@ -351,3 +368,54 @@ class SMSLog(models.Model):
     sent_at = models.DateTimeField(auto_now_add=True)
     success = models.BooleanField(default=True)
     error_message = models.CharField(max_length=500, blank=True)
+
+
+class SalaryAdvance(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        PARTIALLY_REPAID = "partially_repaid", "Partially Repaid"
+        REPAID = "repaid", "Repaid"
+        CANCELLED = "cancelled", "Cancelled"
+
+    staff = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="salary_advances",
+        limit_choices_to={"role__in": [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]},
+    )
+    requested_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    approved_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    outstanding_balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    reason = models.TextField(blank=True)
+    manager_notes = models.TextField(blank=True)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approved_salary_advances",
+    )
+
+    class Meta:
+        ordering = ["-requested_at"]
+
+    def __str__(self):
+        return f"{self.staff.full_name} advance {self.requested_amount}"
+
+
+class SalaryAdvanceRepayment(models.Model):
+    advance = models.ForeignKey(SalaryAdvance, on_delete=models.CASCADE, related_name="repayments")
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="advance_repayments")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-applied_at"]
+
+    def __str__(self):
+        return f"{self.advance.staff.full_name} repayment {self.amount}"

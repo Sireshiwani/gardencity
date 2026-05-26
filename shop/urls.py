@@ -1,6 +1,13 @@
-from django.contrib.auth.views import LogoutView
+from django.contrib.auth.views import (
+    LogoutView,
+    PasswordResetCompleteView,
+    PasswordResetConfirmView,
+    PasswordResetDoneView,
+    PasswordResetView,
+)
 from django.urls import path
 
+from .forms import PasswordResetConfirmStyledForm, PasswordResetRequestForm
 from .loyalty_views import (
     BarberNoteCreateView,
     BarberNoteListView,
@@ -13,16 +20,22 @@ from .loyalty_views import (
     customer_register,
     loyalty_manage,
 )
+from .api_views import booking_create, booking_options, public_home
 from .views import (
     DashboardView,
     ExpenseCreateView,
     ExpenseDeleteView,
     ExpenseListView,
     ExpenseUpdateView,
+    PaymentCreateView,
+    PaymentListView,
     SaleCreateView,
     SaleDeleteView,
     SaleListView,
     SaleUpdateView,
+    SalaryAdvanceCreateView,
+    SalaryAdvanceListView,
+    SalaryAdvanceReviewView,
     ServiceCreateView,
     ServiceDeleteView,
     ServiceListView,
@@ -41,6 +54,9 @@ from .views import (
 urlpatterns = [
     path("", home, name="home"),
     path("book/", book_now, name="book-now"),
+    path("api/public/home/", public_home, name="api-public-home"),
+    path("api/booking/options/", booking_options, name="api-booking-options"),
+    path("api/booking/", booking_create, name="api-booking"),
     path("account/register/", customer_register, name="customer-register"),
     path("account/", CustomerDashboardView.as_view(), name="customer-dashboard"),
     path("customers/", CustomerListView.as_view(), name="customer-list"),
@@ -53,6 +69,36 @@ urlpatterns = [
     path("loyalty/slow-hours/<int:pk>/delete/", SlowHourDeleteView.as_view(), name="slow-hour-delete"),
     path("login/", StaffLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path(
+        "password-reset/",
+        PasswordResetView.as_view(
+            form_class=PasswordResetRequestForm,
+            template_name="shop/password_reset_form.html",
+            email_template_name="shop/password_reset_email.txt",
+            subject_template_name="shop/password_reset_subject.txt",
+            success_url="/password-reset/done/",
+        ),
+        name="password_reset",
+    ),
+    path(
+        "password-reset/done/",
+        PasswordResetDoneView.as_view(template_name="shop/password_reset_done.html"),
+        name="password_reset_done",
+    ),
+    path(
+        "reset/<uidb64>/<token>/",
+        PasswordResetConfirmView.as_view(
+            form_class=PasswordResetConfirmStyledForm,
+            template_name="shop/password_reset_confirm.html",
+            success_url="/reset/done/",
+        ),
+        name="password_reset_confirm",
+    ),
+    path(
+        "reset/done/",
+        PasswordResetCompleteView.as_view(template_name="shop/password_reset_complete.html"),
+        name="password_reset_complete",
+    ),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("staff/", StaffListView.as_view(), name="staff-list"),
     path("staff/add/", StaffCreateView.as_view(), name="staff-create"),
@@ -70,6 +116,11 @@ urlpatterns = [
     path("expenses/add/", ExpenseCreateView.as_view(), name="expense-create"),
     path("expenses/<int:pk>/edit/", ExpenseUpdateView.as_view(), name="expense-update"),
     path("expenses/<int:pk>/delete/", ExpenseDeleteView.as_view(), name="expense-delete"),
+    path("payments/", PaymentListView.as_view(), name="payment-list"),
+    path("payments/add/", PaymentCreateView.as_view(), name="payment-create"),
+    path("salary-advances/", SalaryAdvanceListView.as_view(), name="salary-advance-list"),
+    path("salary-advances/add/", SalaryAdvanceCreateView.as_view(), name="salary-advance-create"),
+    path("salary-advances/<int:pk>/review/", SalaryAdvanceReviewView.as_view(), name="salary-advance-review"),
     path("reports/sales/", sales_report, name="sales-report"),
     path("reports/expenses/", expense_report, name="expense-report"),
 ]

@@ -1,0 +1,51 @@
+{% extends 'shop/base.html' %}
+{% block title %}Salary Advances | Garden City Fine Cuts{% endblock %}
+{% block content %}
+<div class="flex items-end justify-between gap-4">
+    <div>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Payroll</p>
+        <h1 class="mt-3 font-display text-4xl font-bold text-white">Salary advances</h1>
+    </div>
+    <a href="{% url 'salary-advance-create' %}" class="rounded-full bg-gold px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Request Advance</a>
+</div>
+<section class="mt-8 glass-card rounded-3xl p-6 table-shell">
+    <table>
+        <thead>
+            <tr>
+                <th>Staff</th>
+                <th>Requested</th>
+                <th>Approved</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+                <th>Requested At</th>
+                {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                    <th>Action</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for advance in advances %}
+                <tr>
+                    <td>{{ advance.staff.full_name }}</td>
+                    <td>{{ CURRENCY }} {{ advance.requested_amount }}</td>
+                    <td>{% if advance.approved_amount %}{{ CURRENCY }} {{ advance.approved_amount }}{% else %}—{% endif %}</td>
+                    <td>{{ CURRENCY }} {{ advance.outstanding_balance }}</td>
+                    <td>{{ advance.get_status_display }}</td>
+                    <td>{{ advance.requested_at|date:"M d, Y H:i" }}</td>
+                    {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+                        <td>
+                            {% if advance.status == 'pending' %}
+                                <a href="{% url 'salary-advance-review' advance.pk %}" class="text-yellow-500">Review</a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+            {% empty %}
+                <tr><td colspan="7" class="text-gray-400">No advances yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

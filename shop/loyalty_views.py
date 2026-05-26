@@ -38,7 +38,12 @@ class StaffBarberMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 def customer_register(request):
     if request.user.is_authenticated:
-        return redirect("customer-dashboard")
+        role = getattr(request.user, "role", None)
+        if role == User.Roles.CUSTOMER:
+            return redirect("customer-dashboard")
+        if role in {User.Roles.ADMIN, User.Roles.MANAGER}:
+            return redirect("loyalty-manage" if role == User.Roles.ADMIN else "customer-list")
+        return redirect("dashboard")
     if request.method == "POST":
         form = CustomerRegistrationForm(request.POST)
         if form.is_valid():
@@ -55,8 +60,10 @@ class CustomerDashboardView(CustomerRoleRequiredMixin, TemplateView):
     template_name = "shop/customer_dashboard.html"
 
     def dispatch(self, request, *args, **kwargs):
+        if getattr(request.user, "role", None) != User.Roles.CUSTOMER:
+            return redirect("dashboard")
         if not hasattr(request.user, "customer_profile"):
-            messages.error(request, "Customer profile not found.")
+            messages.error(request, "Customer profile not found. Please complete registration.")
             return redirect("customer-register")
         return super().dispatch(request, *args, **kwargs)
 
@@ -77,7 +84,7 @@ def loyalty_manage(request):
         form = LoyaltySettingsDashboardForm(request.POST, instance=obj)
         if form.is_valid():
             form.save()
-            messages.success(request, "Loyalty settings updated.")
+            messages.success(request, "Rewards settings updated.")
             return redirect("loyalty-manage")
     else:
         form = LoyaltySettingsDashboardForm(instance=obj)

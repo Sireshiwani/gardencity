@@ -2,22 +2,22 @@
 {% block title %}My Rewards | Garden City Fine Cuts{% endblock %}
 {% block content %}
 <div class="mb-8">
-    <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Rewards</p>
+    <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Rewards</p>
     <h1 class="mt-3 font-display text-4xl font-bold text-white">Hi {{ profile.first_name }}</h1>
-    <p class="mt-2 text-zinc-400">Referral code: <span class="font-mono text-amber-300">{{ profile.referral_code }}</span></p>
+    <p class="mt-2 text-gray-400">Referral code: <span class="font-mono text-yellow-500">{{ profile.referral_code }}</span></p>
 </div>
 <section class="grid gap-5 md:grid-cols-3">
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Points balance</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Points balance</p>
         <h2 class="mt-3 font-display text-4xl font-bold text-white">{{ profile.points_balance }}</h2>
     </div>
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">Tier</p>
-        <h2 class="mt-3 font-display text-3xl font-bold capitalize text-amber-300">{{ profile.get_tier_display }}</h2>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Tier</p>
+        <h2 class="mt-3 font-display text-3xl font-bold capitalize text-yellow-500">{{ profile.get_tier_display }}</h2>
     </div>
     <div class="glass-card rounded-3xl p-6">
-        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">SMS opt-in</p>
-        <p class="mt-3 text-zinc-300">{% if profile.sms_opt_out %}Opted out{% else %}Subscribed{% endif %}</p>
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">SMS opt-in</p>
+        <p class="mt-3 text-gray-300">{% if profile.sms_opt_out %}Opted out{% else %}Subscribed{% endif %}</p>
     </div>
 </section>
 <section class="mt-10 glass-card rounded-3xl p-6 table-shell">
@@ -39,10 +39,10 @@
                     <td>{{ row.get_entry_type_display }}</td>
                     <td class="{% if row.points_delta > 0 %}text-emerald-400{% else %}text-red-300{% endif %}">{{ row.points_delta }}</td>
                     <td>{{ row.balance_after }}</td>
-                    <td class="text-zinc-400">{{ row.description }}</td>
+                    <td class="text-gray-400">{{ row.description }}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="5" class="text-zinc-400">No activity yet.</td></tr>
+                <tr><td colspan="5" class="text-gray-400">No activity yet.</td></tr>
             {% endfor %}
         </tbody>
     </table>

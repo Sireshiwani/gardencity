@@ -2,10 +2,10 @@
 {% block content %}
 <div class="flex items-end justify-between gap-4">
     <div>
-        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Sales Ledger</p>
+        <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Sales Ledger</p>
         <h1 class="mt-3 font-display text-4xl font-bold text-white">Track revenue and commission by service.</h1>
     </div>
-    <a href="{% url 'sale-create' %}" class="rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Log Sale</a>
+    <a href="{% url 'sale-create' %}" class="rounded-full bg-gold px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Log Sale</a>
 </div>
 <section class="mt-8 glass-card rounded-3xl p-6 table-shell">
     <table>
@@ -26,7 +26,7 @@
             {% for sale in sales %}
                 <tr>
                     <td>{{ sale.service.name }}</td>
-                    <td>{% if sale.customer %}{{ sale.customer.first_name }} {{ sale.customer.last_name }} ({{ sale.customer.email }}){% else %}—{% endif %}</td>
+                    <td>{% if sale.customer %}{{ sale.customer.first_name }} {{ sale.customer.last_name }}{% if sale.customer.email %} ({{ sale.customer.email }}){% elif sale.customer.phone %} ({{ sale.customer.phone }}){% endif %}{% else %}—{% endif %}</td>
                     <td>{% if sale.staff %}{{ sale.staff.full_name }}{% else %}{{ sale.staff_snapshot_name|default:"—" }}{% endif %}</td>
                     <td>{{ CURRENCY }} {{ sale.price }}</td>
                     <td>{{ CURRENCY }} {{ sale.commission_amount }}</td>
@@ -34,7 +34,7 @@
                     <td>{{ sale.get_payment_method_display }}</td>
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                     <td class="space-x-3">
-                        <a href="{% url 'sale-update' sale.pk %}" class="text-amber-300">Edit</a>
+                        <a href="{% url 'sale-update' sale.pk %}" class="text-yellow-500">Edit</a>
                         {% if request.user.role == 'admin' %}
                             <a href="{% url 'sale-delete' sale.pk %}" class="text-red-300">Delete</a>
                         {% endif %}

@@ -1,98 +1,180 @@
 {% extends 'shop/base.html' %}
-{% load static %}
-{% block title %}Garden City Fine Cuts | Premium Barber Experience{% endblock %}
+{% load static shop_extras %}
+{% block title %}Garden City Fine Cuts | Premium Grooming{% endblock %}
+{% block page_shell_class %}{% endblock %}
+{% block site_chrome %}{% endblock %}
+{% block main_class %}{% endblock %}
+
 {% block content %}
-<section class="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-    <div class="space-y-6">
-        <p class="font-display text-sm uppercase tracking-[0.4em] text-amber-400">Luxury Grooming. Precision Craft.</p>
-        <h1 class="font-display text-5xl font-black leading-tight text-white md:text-7xl">Your Image is Your Signature. Make it Bold.</h1>
-        <p class="max-w-2xl text-lg leading-8 text-zinc-300">
-            Garden City Fine Cuts blends sharp cuts, polished service, and an elevated atmosphere with deep charcoal interiors, bronze accents, and effortless booking.
-        </p>
-        <div class="flex flex-wrap gap-4">
-            <a href="{% url 'book-now' %}" class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Book Now</a>
-            <a href="#services" class="rounded-full border border-white/15 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-white transition hover:border-amber-400 hover:text-amber-300">Our Services</a>
+<main class="min-h-screen bg-[#0b0b0b]">
+    <nav class="fixed z-50 w-full bg-gradient-to-b from-black/80 to-transparent">
+        <div class="page-container flex flex-wrap items-center justify-between gap-3 py-4 sm:gap-4 sm:py-6">
+        <a href="#top" class="flex min-w-0 max-w-[70%] items-center gap-2 sm:max-w-none sm:gap-3">
+            <img src="{% static 'shop/logo.png' %}" alt="Garden City Fine Cuts logo" class="h-9 w-9 shrink-0 rounded-full border border-gold/40 object-cover sm:h-10 sm:w-10 md:h-12 md:w-12">
+            <span class="text-gold-gradient font-display text-xs font-bold leading-tight sm:text-sm md:text-lg lg:text-xl">Garden City Fine Cuts</span>
+        </a>
+        <div class="hidden gap-6 text-sm font-light lg:flex lg:gap-8">
+            <a href="#services" class="transition hover:text-yellow-500">Services</a>
+            <a href="#team" class="transition hover:text-yellow-500">Master Barbers</a>
+            <a href="#booking" class="transition hover:text-yellow-500">The Club</a>
         </div>
-    </div>
-    <div class="glass-card overflow-hidden rounded-[2rem]">
-        <img
-            src="{% static 'shop/hero.png' %}"
-            alt="Barber styling a client at Garden City Fine Cuts"
-            class="h-[520px] w-full object-cover opacity-90"
-        >
-    </div>
-</section>
-
-<section id="services" class="mt-20">
-    <div class="mb-8 flex items-end justify-between">
-        <div>
-            <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Our Services</p>
-            <h2 class="mt-3 font-display text-4xl font-bold text-white">Precision cuts and elevated grooming.</h2>
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+            {% if request.user.is_authenticated and request.user.role != 'customer' %}
+            <a href="{% url 'dashboard' %}" class="rounded-full border border-white/20 px-4 py-2 text-xs font-bold uppercase tracking-tighter text-gray-200 transition hover:border-yellow-500 hover:text-yellow-500 sm:px-6">Dashboard</a>
+            {% else %}
+            <a href="{% url 'login' %}" class="rounded-full border border-white/20 px-4 py-2 text-xs font-bold uppercase tracking-tighter text-gray-200 transition hover:border-yellow-500 hover:text-yellow-500 sm:px-6">Staff Login</a>
+            {% endif %}
+            <a href="#booking" class="rounded-full bg-[#D4A017] px-4 py-2 text-xs font-bold uppercase tracking-tighter text-black transition hover:scale-105 sm:px-6">Appointments</a>
         </div>
-    </div>
-    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {% for service in services %}
-            <article class="glass-card overflow-hidden rounded-3xl">
-                <img
-                    src="{{ service.photo_url|default:'https://images.unsplash.com/photo-1521493959102-bdd6677fdd81?auto=format&fit=crop&w=1200&q=80' }}"
-                    alt="{{ service.name }}"
-                    class="h-44 w-full object-cover"
-                >
-                <div class="p-6">
-                <p class="text-sm uppercase tracking-[0.25em] text-amber-400">{{ service.get_category_display }}</p>
-                <h3 class="mt-3 font-display text-2xl font-bold">{{ service.name }}</h3>
-                <p class="mt-3 min-h-[72px] text-zinc-400">{{ service.description|default:"Clean finish, premium detail, and confident style." }}</p>
-                <div class="mt-5 flex items-center justify-between">
-                    <span class="text-3xl font-semibold text-white">{{ CURRENCY }} {{ service.price }}</span>
-                    <span class="text-sm text-zinc-400">{{ service.duration_minutes }} mins</span>
-                </div>
-                </div>
-            </article>
-        {% empty %}
-            <div class="glass-card rounded-3xl p-6 text-zinc-400">Add services from the dashboard to populate this section.</div>
-        {% endfor %}
-    </div>
-</section>
+        </div>
+    </nav>
 
-<section class="mt-20 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-    <div class="glass-card rounded-3xl p-8">
-        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Meet The Team</p>
-        <h2 class="mt-3 font-display text-4xl font-bold">Crafted by barbers who respect the details.</h2>
-        <p class="mt-4 text-zinc-300">Every appointment is delivered with sharp technique, consistent service, and a premium in-chair experience.</p>
-        <div class="mt-8 space-y-4">
-            {% for member in team %}
-                <div class="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+    <header id="top" class="relative flex h-screen items-center justify-center overflow-hidden">
+        <video autoplay muted loop playsinline class="absolute max-w-none min-h-full min-w-full w-auto opacity-40 grayscale">
+            <source src="https://videos.pexels.com/video-files/3998510/3998510-hd_1920_1080_25fps.mp4" type="video/mp4">
+        </video>
+        <div class="page-container relative z-10 w-full text-center">
+            <span class="mb-4 block text-xs uppercase tracking-[0.5em] text-yellow-500">Elevate Your Presence</span>
+            <h1 class="mb-6 font-display text-4xl font-bold leading-tight sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
+                Sharp Cuts.<br>Built For Kings.
+            </h1>
+            <p class="mx-auto mb-10 max-w-xl text-lg font-light text-gray-400 md:text-xl">
+                The ultimate grooming experience for the modern gentleman in Nairobi.
+            </p>
+            <div class="flex flex-col justify-center gap-4 md:flex-row">
+                <a href="#booking" class="rounded-full bg-[#D4A017] px-10 py-4 text-center text-sm font-bold uppercase text-black">Secure an Appointment</a>
+                <a href="#services" class="rounded-full border border-white/20 px-10 py-4 text-center text-sm font-bold uppercase transition hover:bg-white/10">View Our Portfolio</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="services" class="page-container w-full py-16 sm:py-20 lg:py-24">
+        <div class="mb-16 flex flex-wrap items-end justify-between gap-6">
+            <div>
+                <h2 class="mb-2 font-display text-4xl font-bold md:text-5xl">The Service Menu</h2>
+                <p class="text-gray-500">Precision grooming tailored to your signature look.</p>
+            </div>
+            <a href="#booking" class="border-b border-yellow-500 pb-1 text-sm uppercase tracking-widest text-yellow-500">Full Menu</a>
+        </div>
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 xl:grid-cols-3">
+            {% for service in services %}
+            <div class="glass-card group p-8">
+                <div class="mb-6 h-48 overflow-hidden rounded-xl">
                     <img
-                        src="{{ member.photo_url|default:'https://images.unsplash.com/photo-1517832606299-7ae9b720a186?auto=format&fit=crop&w=300&q=80' }}"
-                        alt="{{ member.full_name }}"
-                        class="h-16 w-16 rounded-full border border-amber-500/30 object-cover"
+                        src="{% if service.photo_url %}{{ service.photo_url }}{% else %}{{ forloop.counter0|service_card_image }}{% endif %}"
+                        alt="{{ service.name }}"
+                        class="h-full w-full object-cover transition duration-500 group-hover:scale-110"
                     >
-                    <div>
-                        <h3 class="font-display text-xl font-semibold text-white">{{ member.full_name }}</h3>
-                        <p class="text-sm uppercase tracking-[0.2em] text-zinc-400">{{ member.get_role_display }}</p>
+                </div>
+                <h3 class="mb-2 font-display text-2xl">{{ service.name }}</h3>
+                <p class="mb-6 text-sm font-light leading-relaxed text-gray-400">
+                    {{ service.description|default:"A seamless premium grooming treatment with attention to detail and a refined finish." }}
+                </p>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-bold tracking-tighter">{{ CURRENCY }} {{ service.price|format_ksh }}</span>
+                    <a href="#booking" class="border-b border-transparent text-xs font-bold uppercase text-[#D4A017] transition hover:border-yellow-500">Book Item</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="glass-card p-8 md:col-span-3">
+                <p class="text-gray-400">Services coming soon. <a href="{% url 'book-now' %}" class="text-yellow-500 hover:underline">Book a visit</a>.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="mt-10 text-center text-sm text-gray-500">
+            <a href="{% url 'book-now' %}" class="text-yellow-500 hover:underline">Dedicated booking page</a>
+        </p>
+    </section>
+
+    <section id="team" class="page-container w-full pb-16 sm:pb-20 lg:pb-24">
+        <div class="glass-card p-6 sm:p-8 lg:p-10">
+            <h2 class="mb-2 font-display text-3xl font-bold md:text-4xl">Master Barbers</h2>
+            <p class="mb-8 text-gray-400">Meet the professionals shaping signature styles daily.</p>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for member in team %}
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-5">
+                    <h3 class="font-display text-2xl">{{ member.full_name }}</h3>
+                    <p class="mt-2 text-xs uppercase tracking-widest text-yellow-500">{{ member.get_role_display }}</p>
+                </div>
+                {% empty %}
+                <p class="text-gray-400 md:col-span-3">Our team profiles will appear here soon.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section id="booking" class="page-container w-full pb-16 sm:pb-20 lg:pb-24">
+        {{ services_payload|json_script:"booking-services-data" }}
+        {{ team_payload|json_script:"booking-team-data" }}
+        <div id="booking-wizard-root" class="glass-card mx-auto w-full max-w-5xl p-6 sm:p-8 lg:p-10">
+            <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="mb-2 font-display text-3xl font-bold md:text-4xl">Secure Your Appointment</h2>
+                    <p class="text-gray-400">Complete this 3-step booking and get instant confirmation.</p>
+                </div>
+                <div class="flex items-center gap-2 text-sm" id="progress-indicator">
+                    <span class="step-dot active inline-flex h-8 w-8 items-center justify-center rounded-full" data-step="1">1</span>
+                    <span class="step-dot inline-flex h-8 w-8 items-center justify-center rounded-full" data-step="2">2</span>
+                    <span class="step-dot inline-flex h-8 w-8 items-center justify-center rounded-full" data-step="3">3</span>
+                </div>
+            </div>
+
+            <div id="booking-feedback" class="mb-6 hidden rounded-xl border border-white/10 px-4 py-3 text-sm" role="status"></div>
+
+            <form id="booking-wizard" class="space-y-6">
+                <div id="step-1" class="grid gap-4 md:grid-cols-2">
+                    <input id="customer_name" required class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500" placeholder="Full Name">
+                    <input id="customer_email" type="email" class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500" placeholder="Email Address (optional)">
+                    <input id="customer_phone" required class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500" placeholder="Phone Number">
+                    <input id="referral_code" class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500" placeholder="Referral / Membership Code (Optional)">
+                    <div class="flex justify-end md:col-span-2">
+                        <button type="button" data-wizard-next="1" class="rounded-full bg-[#D4A017] px-8 py-3 text-sm font-bold uppercase text-black">Continue</button>
                     </div>
                 </div>
-            {% empty %}
-                <p class="text-zinc-400">Team profiles will appear once staff are added.</p>
-            {% endfor %}
-        </div>
-    </div>
-    <div class="glass-card rounded-3xl p-8">
-        <p class="font-display text-sm uppercase tracking-[0.35em] text-amber-400">Quick Booking</p>
-        <h2 class="mt-3 font-display text-4xl font-bold">Reserve your next appointment.</h2>
-        <form method="post" action="{% url 'book-now' %}" class="mt-8 grid gap-4 md:grid-cols-2">
-            {% csrf_token %}
-            {% for field in form %}
-                <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
-                    <label class="text-sm uppercase tracking-[0.18em] text-zinc-400">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}<p class="mt-1 text-sm text-red-300">{{ field.errors|join:", " }}</p>{% endif %}
+
+                <div id="step-2" class="hidden grid gap-4 md:grid-cols-2">
+                    <select id="service_id" required class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500 md:col-span-2">
+                        <option value="">Select a Service</option>
+                    </select>
+                    <input id="appointment_time" type="datetime-local" required class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500">
+                    {% if team_all %}
+                    <select id="preferred_barber" class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500">
+                        <option value="">Preferred Barber (Optional)</option>
+                        {% for member in team_all %}
+                        <option value="{{ member.id }}">{{ member.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input id="preferred_barber" class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500" placeholder="Preferred Barber (Optional)">
+                    {% endif %}
+                    <textarea id="booking_notes" rows="3" class="rounded-xl border border-white/10 bg-black/30 px-4 py-3 outline-none focus:border-yellow-500 md:col-span-2" placeholder="Extra notes"></textarea>
+                    <div class="flex justify-between md:col-span-2">
+                        <button type="button" data-wizard-back="2" class="rounded-full border border-white/20 px-8 py-3 text-sm font-bold uppercase">Back</button>
+                        <button type="button" data-wizard-next="2" class="rounded-full bg-[#D4A017] px-8 py-3 text-sm font-bold uppercase text-black">Review</button>
+                    </div>
                 </div>
-            {% endfor %}
-            <div class="md:col-span-2">
-                <button class="rounded-full bg-amber-500 px-7 py-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-black transition hover:bg-amber-400">Request Booking</button>
-            </div>
-        </form>
+
+                <div id="step-3" class="hidden space-y-4">
+                    <div class="rounded-2xl border border-white/10 bg-black/20 p-6 text-sm leading-relaxed" id="booking-summary"></div>
+                    <div class="flex justify-between">
+                        <button type="button" data-wizard-back="3" class="rounded-full border border-white/20 px-8 py-3 text-sm font-bold uppercase">Back</button>
+                        <button type="submit" id="booking-submit" class="rounded-full bg-[#D4A017] px-8 py-3 text-sm font-bold uppercase text-black disabled:opacity-60">Confirm Booking</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <div class="fixed bottom-8 right-8 z-50 md:hidden">
+        <a href="#booking" class="inline-flex animate-bounce rounded-full bg-green-600 p-4 shadow-2xl" aria-label="Book appointment">
+            <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2Zm5.3 13.6c-.2.6-1.1 1.1-1.5 1.1-.4.1-.9.1-1.5-.1-.4-.1-.9-.3-1.6-.6-2.7-1.2-4.4-4.1-4.5-4.3-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.3-.3.7-.4.9-.4h.7c.2 0 .5-.1.7.4.2.6.8 2 .8 2.2 0 .2 0 .4-.1.6-.1.2-.2.4-.4.6-.2.2-.4.4-.2.8.2.4 1 1.6 2.1 2.6 1.5 1.3 2.7 1.7 3.1 1.9.4.2.6.1.8-.1.2-.2 1-1.1 1.2-1.5.2-.4.5-.3.8-.2.3.1 1.8.8 2.1.9.3.2.5.3.5.5 0 .2-.1.9-.3 1.4Z"/>
+            </svg>
+        </a>
     </div>
-</section>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{% static 'shop/home-booking-wizard.js' %}"></script>
 {% endblock %}
