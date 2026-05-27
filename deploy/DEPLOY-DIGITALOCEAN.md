@@ -130,11 +130,61 @@ PORT=3000
 | `https://yourdomain.com/dashboard/` | Django staff dashboard |
 | `http://127.0.0.1:8000/` on server | Redirects to `PUBLIC_SITE_URL` |
 
-## Updates
+## Updates (after pushing to GitHub)
+
+**One command** — from a **git clone** of the repo (folder must contain `.git`):
+
+```bash
+cd /var/www/gardencity
+bash deploy/deploy.sh
+```
+
+`deploy/deploy.sh` will:
+
+1. Require a **clean** git working tree (no uncommitted server edits)
+2. **Fetch and fast-forward** `main` (override with `GIT_BRANCH=develop`)
+3. Install Python dependencies
+4. **Backup Postgres** to `/var/backups/gardencity/` (skip with `DEPLOY_BACKUP_DB=0`; skipped automatically for SQLite)
+5. Run **migrations** and **collectstatic**
+6. Restart **finecuts-django**
+7. **Health-check** `http://127.0.0.1:8000/login/`
+
+Logs append to `deploy.log` in the project directory.
+
+Optional environment:
+
+```bash
+GIT_BRANCH=main DEPLOY_BACKUP_DB=1 HEALTH_URL=http://127.0.0.1:8000/login/ bash deploy/deploy.sh
+```
+
+Requires `curl` and `pg_dump` (postgresql-client) on the server for health checks and DB backups.
+
+If you see `fatal: not a git repository`, the app was copied without `git clone`. Fix once:
+
+```bash
+cd /var/www
+sudo mv gardencity gardencity.backup    # keep old .env / media if any
+git clone https://github.com/Sireshiwani/finecuts2.git gardencity
+cd gardencity
+cp ../gardencity.backup/.env .env       # restore your server .env
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+sudo systemctl restart finecuts-django
+```
+
+Then use `bash deploy/deploy.sh` for all future updates.
+
+**Manual commands** (same as the script):
 
 ```bash
 cd /var/www/gardencity && git pull && source .venv/bin/activate && pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput && sudo systemctl restart finecuts-django
+```
 
+**Optional — separate Next.js site** (only if you still use `/var/www/finecuts2`):
+
+```bash
 cd /var/www/finecuts2 && git pull && npm ci && npm run build && sudo systemctl restart finecuts-next
 ```
 
