@@ -7,7 +7,7 @@
 # Environment (optional):
 #   GIT_BRANCH=main              Branch to deploy (default: main)
 #   GIT_REMOTE=origin            Remote name (default: origin)
-#   DJANGO_SERVICE=finecuts-django systemd unit to restart
+#   DJANGO_SERVICE=finecuts          systemd unit to restart (default: finecuts)
 #   DEPLOY_BACKUP_DB=1           1 = pg_dump before migrate (default: 1)
 #   DEPLOY_BACKUP_DIR=/var/backups/gardencity
 #   HEALTH_URL=http://127.0.0.1:8000/login/
@@ -22,16 +22,17 @@ cd "$APP_DIR"
 
 GIT_BRANCH="${GIT_BRANCH:-main}"
 GIT_REMOTE="${GIT_REMOTE:-origin}"
-SERVICE_NAME="${DJANGO_SERVICE:-finecuts-django}"
+SERVICE_NAME="${DJANGO_SERVICE:-finecuts}"
 VENV="${APP_DIR}/.venv/bin/activate"
 DEPLOY_BACKUP_DB="${DEPLOY_BACKUP_DB:-1}"
 DEPLOY_BACKUP_DIR="${DEPLOY_BACKUP_DIR:-/var/backups/gardencity}"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8000/login/}"
 HEALTH_RETRIES="${HEALTH_RETRIES:-5}"
-LOG_FILE="${DEPLOY_LOG:-${APP_DIR}/deploy.log}"
+LOG_FILE="${DEPLOY_LOG:-/var/log/finecuts-deploy.log}"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
+sudo mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
 exec > >(tee -a "$LOG_FILE") 2>&1
 log "==> Deploy started (branch=${GIT_BRANCH}, dir=${APP_DIR})"
 
@@ -46,7 +47,9 @@ require_git_repo() {
 }
 
 require_clean_tree() {
-  if [[ -n "$(git status --porcelain)" ]]; then
+  local dirty
+  dirty="$(git status --porcelain | grep -v '^?? deploy\.log$' || true)"
+  if [[ -n "$dirty" ]]; then
     log "ERROR: Working tree is not clean. Commit, stash, or discard local changes first:"
     git status --short
     exit 1
