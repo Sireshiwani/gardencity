@@ -34,7 +34,14 @@
                     <td>{{ sale.get_payment_method_display }}</td>
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
                     <td class="space-x-3">
-                        <a href="{% url 'sale-update' sale.pk %}" class="text-yellow-500">Edit</a>
+                        {% if request.user.role == 'admin' or sale.pk in direct_edit_sale_ids %}
+                            <a href="{% url 'sale-update' sale.pk %}" class="text-yellow-500">Edit</a>
+                        {% elif request.user.role == 'manager' %}
+                            <a href="{% url 'sale-update' sale.pk %}" class="text-yellow-500">Request change</a>
+                        {% endif %}
+                        {% if sale.pk in pending_change_request_ids %}
+                            <span class="text-xs uppercase tracking-widest text-yellow-500/80">Pending</span>
+                        {% endif %}
                         {% if request.user.role == 'admin' %}
                             <a href="{% url 'sale-delete' sale.pk %}" class="text-red-300">Delete</a>
                         {% endif %}

@@ -262,6 +262,34 @@ class SaleForm(TailwindMixin, forms.ModelForm):
         return sale
 
 
+class SaleEditForm(SaleForm):
+    change_reason = forms.CharField(
+        required=False,
+        label="Reason for change",
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Explain why this sale record needs to be updated."}),
+    )
+
+    def __init__(self, *args, requires_approval=False, **kwargs):
+        self.requires_approval = requires_approval
+        super().__init__(*args, **kwargs)
+        if requires_approval:
+            self.fields["change_reason"].required = True
+        else:
+            del self.fields["change_reason"]
+
+
+class SaleChangeReviewForm(TailwindMixin, forms.Form):
+    admin_notes = forms.CharField(
+        required=False,
+        label="Admin notes",
+        widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Optional notes for the manager if rejecting."}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_tailwind()
+
+
 class ExpenseForm(TailwindMixin, forms.ModelForm):
     class Meta:
         model = Expense
@@ -411,21 +439,28 @@ class PublicBookingForm(TailwindMixin, forms.ModelForm):
         )
         widgets = {"appointment_at": forms.DateTimeInput(attrs={"type": "datetime-local"})}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, acting_user=None, **kwargs):
+        self.acting_user = acting_user
         super().__init__(*args, **kwargs)
         self.fields["staff"].required = False
         ce = self.fields["customer_email"]
         ce.required = False
         ce.label = "Email (optional)"
+        if acting_user and acting_user.role == User.Roles.STAFF:
+            self.fields["staff"].widget = forms.HiddenInput()
+            self.fields["staff"].initial = acting_user.pk
+            self.fields.pop("referral_code", None)
         self.apply_tailwind()
 
     def save(self, commit=True):
         inst = super().save(commit=False)
+        if self.acting_user and self.acting_user.role == User.Roles.STAFF:
+            inst.staff = self.acting_user
         cust = get_or_create_from_booking(
             full_name=inst.customer_name,
             email=inst.customer_email or "",
             phone=inst.customer_phone,
-            referral_code=self.cleaned_data.get("referral_code"),
+            referral_code=self.cleaned_data.get("referral_code", ""),
         )
         inst.customer = cust
         if commit:

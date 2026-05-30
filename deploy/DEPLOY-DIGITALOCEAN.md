@@ -130,6 +130,72 @@ PORT=3000
 | `https://yourdomain.com/dashboard/` | Django staff dashboard |
 | `http://127.0.0.1:8000/` on server | Redirects to `PUBLIC_SITE_URL` |
 
+## Troubleshooting: domain works in DNS but browser fails
+
+Symptoms in `journalctl -u finecuts`:
+
+- `DisallowedHost: Invalid HTTP_HOST header: 'yourdomain.com'`
+- `Forbidden (CSRF cookie not set.): /`
+
+**Cause:** nginx forwards `Host: yourdomain.com`, but `.env` only lists the droplet IP. With `DEBUG=False`, secure cookies are on by default while the site is still **HTTP**.
+
+**Fix** — edit `/var/www/finecuts/.env` (paths may be `gardencity` on older servers):
+
+```env
+DJANGO_ALLOWED_HOSTS=165.22.30.29,shersh.suw.me,www.shersh.suw.me
+DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.30.29,http://shersh.suw.me,http://www.shersh.suw.me
+DJANGO_SECURE_SSL_REDIRECT=false
+DJANGO_SESSION_COOKIE_SECURE=false
+DJANGO_CSRF_COOKIE_SECURE=false
+PUBLIC_SITE_URL=
+```
+
+Then:
+
+```bash
+sudo systemctl restart finecuts
+```
+
+**nginx** — add the domain to `server_name` (see `deploy/nginx-finecuts-django-only.conf`):
+
+```nginx
+server_name 165.22.30.29 shersh.suw.me www.shersh.suw.me;
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**Verify:**
+
+```bash
+curl -sI -H "Host: shersh.suw.me" http://127.0.0.1/ | head -5
+curl -sI http://shersh.suw.me/ | head -5
+```
+
+Use `http://` in the browser until certbot enables HTTPS. After SSL, set `DJANGO_*_COOKIE_SECURE=true`, `DJANGO_SECURE_SSL_REDIRECT=true`, and `https://` CSRF origins.
+
+### Login returns 403 CSRF verification failed (after HTTPS)
+
+1. **`.env` must use `https://` origins** (not only `http://`):
+
+   ```env
+   DJANGO_CSRF_TRUSTED_ORIGINS=https://shersh.suw.me,https://www.shersh.suw.me
+   DJANGO_SESSION_COOKIE_SECURE=true
+   DJANGO_CSRF_COOKIE_SECURE=true
+   DJANGO_SECURE_SSL_REDIRECT=true
+   ```
+
+2. **nginx SSL `location /` must forward HTTPS** (certbot sometimes omits this):
+
+   ```nginx
+   proxy_set_header X-Forwarded-Proto $scheme;
+   ```
+
+3. **Restart** `sudo systemctl restart finecuts` and **clear site cookies** for `shersh.suw.me` (old HTTP cookies break HTTPS login).
+
+4. **Check** the login page sets a cookie: DevTools → Application → Cookies → `csrftoken` on `https://shersh.suw.me`.
+
 ## Updates (after pushing to GitHub)
 
 **One command** — from a **git clone** of the repo (folder must contain `.git`):

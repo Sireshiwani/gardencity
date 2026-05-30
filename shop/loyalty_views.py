@@ -19,7 +19,7 @@ from shop.forms import (
 )
 from shop.models import Appointment, Customer, CustomerBarberNote, LoyaltySettings, PointsLedger, ReferralCredit, Sale, SlowHourWindow, User
 from shop.services.loyalty import get_loyalty_settings, slow_hour_multiplier_for_datetime
-from shop.views import FormTitleMixin, ManagerOrAdminRequiredMixin
+from shop.views import AdminRequiredMixin, FormTitleMixin, ManagerOrAdminRequiredMixin
 
 
 class CustomerRoleRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -41,8 +41,10 @@ def customer_register(request):
         role = getattr(request.user, "role", None)
         if role == User.Roles.CUSTOMER:
             return redirect("customer-dashboard")
-        if role in {User.Roles.ADMIN, User.Roles.MANAGER}:
-            return redirect("loyalty-manage" if role == User.Roles.ADMIN else "customer-list")
+        if role == User.Roles.ADMIN:
+            return redirect("loyalty-manage")
+        if role == User.Roles.MANAGER:
+            return redirect("dashboard")
         return redirect("dashboard")
     if request.method == "POST":
         form = CustomerRegistrationForm(request.POST)
@@ -164,7 +166,7 @@ class LoyaltyOwnerReportView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return ctx
 
 
-class CustomerListView(StaffBarberMixin, ListView):
+class CustomerListView(AdminRequiredMixin, ListView):
     model = Customer
     template_name = "shop/customer_list.html"
     context_object_name = "customers"

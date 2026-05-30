@@ -145,6 +145,8 @@ class Sale(models.Model):
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     date = models.DateTimeField(default=timezone.now)
     notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-date"]
@@ -419,3 +421,98 @@ class SalaryAdvanceRepayment(models.Model):
 
     def __str__(self):
         return f"{self.advance.staff.full_name} repayment {self.amount}"
+
+
+class SaleChangeRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+        CANCELLED = "cancelled", "Cancelled"
+        SUPERSEDED = "superseded", "Superseded"
+
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name="change_requests")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sale_change_requests",
+        limit_choices_to={"role__in": [User.Roles.MANAGER]},
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField()
+    sale_updated_at_snapshot = models.DateTimeField(
+        help_text="Sale.updated_at when this request was submitted; used to detect stale approvals.",
+    )
+    reviewed_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_sale_change_requests",
+        limit_choices_to={"role__in": [User.Roles.ADMIN]},
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    admin_notes = models.TextField(blank=True)
+    service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name="+")
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    appointment = models.ForeignKey(
+        "Appointment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    staff = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"role__in": [User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]},
+    )
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
+    date = models.DateTimeField()
+    notes = models.TextField(blank=True)
+    new_first_name = models.CharField(max_length=100, blank=True)
+    new_last_name = models.CharField(max_length=100, blank=True)
+    new_email = models.EmailField(blank=True)
+    new_phone = models.CharField(max_length=50, blank=True)
+
+    class Meta:
+        ordering = ["-requested_at"]
+
+    def __str__(self):
+        return f"Change request for sale #{self.sale_id} ({self.get_status_display()})"
+
+
+class StaffNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    message = models.CharField(max_length=500)
+    link = models.CharField(max_length=255, blank=True)
+    change_request = models.ForeignKey(
+        SaleChangeRequest,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="notifications",
+    )
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.message[:80]
+
+    @property
+    def is_read(self):
+        return self.read_at is not None

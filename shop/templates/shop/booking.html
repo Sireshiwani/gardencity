@@ -1,6 +1,100 @@
 {% extends 'shop/base.html' %}
 {% block title %}Appointments | Garden City Fine Cuts{% endblock %}
 {% block content %}
+{% if staff_view %}
+<div class="mb-8">
+    <p class="text-xs uppercase tracking-[0.5em] text-yellow-500">Appointments</p>
+    <h1 class="mt-3 font-display text-4xl font-bold md:text-5xl">Manage bookings.</h1>
+    <p class="mt-2 text-gray-400">
+        {% if show_all_appointments %}
+            All scheduled appointments across the shop.
+        {% else %}
+            Appointments assigned to you.
+        {% endif %}
+    </p>
+</div>
+
+<div class="grid gap-8 xl:grid-cols-2">
+    <section class="glass-card rounded-3xl p-6 sm:p-8">
+        <div class="mb-6 flex items-center justify-between gap-4">
+            <div>
+                <p class="text-sm uppercase tracking-[0.2em] text-gray-400">Scheduled</p>
+                <h2 class="mt-2 font-display text-2xl font-bold text-white">Appointments list</h2>
+            </div>
+            <span class="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-widest text-gray-400">
+                {{ appointments|length }} total
+            </span>
+        </div>
+
+        <div class="max-h-[32rem] space-y-3 overflow-y-auto pr-1">
+            {% for appointment in appointments %}
+                <article class="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                            <p class="font-display text-lg text-white">{{ appointment.customer_name }}</p>
+                            <p class="mt-1 text-sm text-gray-400">{{ appointment.service.name }}</p>
+                        </div>
+                        <span class="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-widest text-yellow-500">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </div>
+                    <dl class="mt-3 grid gap-1 text-sm text-gray-400 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs uppercase tracking-widest text-gray-500">When</dt>
+                            <dd class="text-gray-300">{{ appointment.appointment_at|date:"M d, Y H:i" }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-widest text-gray-500">Staff</dt>
+                            <dd class="text-gray-300">
+                                {% if appointment.staff %}
+                                    {{ appointment.staff.full_name }}
+                                {% elif appointment.staff_snapshot_name %}
+                                    {{ appointment.staff_snapshot_name }}
+                                {% else %}
+                                    Any available
+                                {% endif %}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs uppercase tracking-widest text-gray-500">Phone</dt>
+                            <dd class="text-gray-300">{{ appointment.customer_phone|default:"—" }}</dd>
+                        </div>
+                        {% if appointment.customer_email %}
+                            <div>
+                                <dt class="text-xs uppercase tracking-widest text-gray-500">Email</dt>
+                                <dd class="text-gray-300">{{ appointment.customer_email }}</dd>
+                            </div>
+                        {% endif %}
+                    </dl>
+                    {% if appointment.notes %}
+                        <p class="mt-3 text-sm text-gray-500">{{ appointment.notes }}</p>
+                    {% endif %}
+                </article>
+            {% empty %}
+                <p class="text-gray-400">No scheduled appointments yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="glass-card rounded-3xl p-6 sm:p-8">
+        <p class="text-sm uppercase tracking-[0.2em] text-gray-400">New booking</p>
+        <h2 class="mt-2 font-display text-2xl font-bold text-white">Schedule appointment</h2>
+        <form method="post" class="mt-8 grid gap-4 md:grid-cols-2">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="{% if field.name == 'notes' %}md:col-span-2{% endif %}">
+                    <label class="text-xs uppercase tracking-widest text-gray-400">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<p class="mt-1 text-sm text-red-300">{{ field.errors|join:", " }}</p>{% endif %}
+                </div>
+            {% endfor %}
+            <div class="md:col-span-2">
+                <button class="rounded-full bg-gold px-8 py-3 text-sm font-bold uppercase tracking-tighter text-black transition hover:scale-105">Schedule Appointment</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% else %}
 <div class="mx-auto w-full max-w-3xl glass-card p-6 sm:max-w-4xl sm:p-8 lg:max-w-5xl lg:p-10">
     <p class="text-xs uppercase tracking-[0.5em] text-yellow-500">Appointments</p>
     <h1 class="mt-3 font-display text-4xl font-bold md:text-5xl">Schedule your next visit.</h1>
@@ -19,4 +113,5 @@
         </div>
     </form>
 </div>
+{% endif %}
 {% endblock %}

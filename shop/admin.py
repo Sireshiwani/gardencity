@@ -15,8 +15,10 @@ from .models import (
     Sale,
     SalaryAdvance,
     SalaryAdvanceRepayment,
+    SaleChangeRequest,
     Service,
     SlowHourWindow,
+    StaffNotification,
     User,
 )
 
@@ -41,9 +43,23 @@ class ServiceAdmin(admin.ModelAdmin):
 
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
-    list_display = ("service", "customer", "staff", "price", "payment_method", "date")
+    list_display = ("service", "customer", "staff", "price", "payment_method", "date", "created_at")
     list_filter = ("payment_method", "service__category")
     raw_id_fields = ("customer", "appointment", "staff")
+
+
+@admin.register(SaleChangeRequest)
+class SaleChangeRequestAdmin(admin.ModelAdmin):
+    list_display = ("sale", "status", "requested_by", "requested_at", "reviewed_by", "reviewed_at")
+    list_filter = ("status",)
+    raw_id_fields = ("sale", "requested_by", "reviewed_by", "service", "customer", "appointment", "staff")
+
+
+@admin.register(StaffNotification)
+class StaffNotificationAdmin(admin.ModelAdmin):
+    list_display = ("user", "message", "read_at", "created_at")
+    list_filter = ("read_at",)
+    raw_id_fields = ("user", "change_request")
 
 
 @admin.register(Expense)

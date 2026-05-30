@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
@@ -21,6 +21,8 @@ from .forms import (
     LoginForm,
     PaymentCreateForm,
     PublicBookingForm,
+    SaleChangeReviewForm,
+    SaleEditForm,
     SaleForm,
     SalaryAdvanceDecisionForm,
     SalaryAdvanceRequestForm,
@@ -30,7 +32,16 @@ from .forms import (
     StaffUserCreationForm,
     StaffUserUpdateForm,
 )
-from .models import Appointment, Expense, Payment, Sale, SalaryAdvance, SalaryAdvanceRepayment, Service, User
+from .models import Appointment, Expense, Payment, Sale, SaleChangeRequest, SalaryAdvance, SalaryAdvanceRepayment, Service, StaffNotification, User
+from .services.sale_changes import (
+    approve_change_request,
+    cancel_pending_requests_for_admin_edit,
+    create_change_request_from_form,
+    get_pending_change_request,
+    manager_edit_deadline,
+    manager_may_edit_sale_directly,
+    reject_change_request,
+)
 
 
 class RoleRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -156,16 +167,43 @@ def home(request):
     )
 
 
+def appointments_for_user(user):
+    qs = Appointment.objects.select_related("service", "staff").exclude(
+        status=Appointment.Status.CANCELLED
+    )
+    if user.role == User.Roles.STAFF:
+        qs = qs.filter(staff=user)
+    return qs
+
+
 def book_now(request):
+    user = request.user
+    staff_view = user.is_authenticated and user.role in (
+        User.Roles.ADMIN,
+        User.Roles.MANAGER,
+        User.Roles.STAFF,
+    )
+
     if request.method == "POST":
-        form = PublicBookingForm(request.POST)
+        form = PublicBookingForm(
+            request.POST,
+            acting_user=user if staff_view else None,
+        )
         if form.is_valid():
             form.save()
+            if staff_view:
+                messages.success(request, "Appointment scheduled successfully.")
+                return redirect("book-now")
             messages.success(request, "Your appointment request has been submitted.")
             return redirect(reverse("home") + "#booking")
     else:
-        form = PublicBookingForm()
-    return render(request, "shop/booking.html", {"form": form})
+        form = PublicBookingForm(acting_user=user if staff_view else None)
+
+    context = {"form": form, "staff_view": staff_view}
+    if staff_view:
+        context["appointments"] = appointments_for_user(user)
+        context["show_all_appointments"] = user.role in (User.Roles.ADMIN, User.Roles.MANAGER)
+    return render(request, "shop/booking.html", context)
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -329,6 +367,26 @@ class SaleListView(ManagerOrAdminRequiredMixin, ListView):
     def get_queryset(self):
         return Sale.objects.select_related("service", "staff", "customer")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sale_ids = [sale.pk for sale in context["sales"]]
+        pending = {
+            req.sale_id: req
+            for req in SaleChangeRequest.objects.filter(
+                sale_id__in=sale_ids,
+                status=SaleChangeRequest.Status.PENDING,
+            ).select_related("requested_by")
+        }
+        context["pending_change_requests"] = pending
+        context["pending_change_request_ids"] = set(pending.keys())
+        context["manager_may_edit"] = {
+            sale.pk: manager_may_edit_sale_directly(sale) for sale in context["sales"]
+        }
+        context["direct_edit_sale_ids"] = {
+            sale_id for sale_id, allowed in context["manager_may_edit"].items() if allowed
+        }
+        return context
+
 
 class SaleCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
     model = Sale
@@ -340,10 +398,57 @@ class SaleCreateView(ManagerOrAdminRequiredMixin, FormTitleMixin, CreateView):
 
 class SaleUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
     model = Sale
-    form_class = SaleForm
     template_name = "shop/sale_form.html"
     success_url = reverse_lazy("sale-list")
     form_title = "Edit Sale"
+
+    def get_form_class(self):
+        return SaleEditForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.user.role == User.Roles.MANAGER:
+            kwargs["requires_approval"] = not manager_may_edit_sale_directly(self.get_object())
+        else:
+            kwargs["requires_approval"] = False
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sale = self.object
+        user = self.request.user
+        requires_approval = user.role == User.Roles.MANAGER and not manager_may_edit_sale_directly(sale)
+        context["requires_approval"] = requires_approval
+        context["pending_change_request"] = get_pending_change_request(sale)
+        context["manager_edit_deadline"] = manager_edit_deadline(sale)
+        if requires_approval:
+            context["form_title"] = "Request Sale Change"
+        return context
+
+    def form_valid(self, form):
+        sale = self.get_object()
+        user = self.request.user
+
+        if user.role == User.Roles.ADMIN:
+            cancel_pending_requests_for_admin_edit(sale, user)
+            messages.success(self.request, "Sale updated.")
+            return super().form_valid(form)
+
+        if manager_may_edit_sale_directly(sale):
+            messages.success(self.request, "Sale updated.")
+            return super().form_valid(form)
+
+        create_change_request_from_form(
+            sale,
+            form,
+            user,
+            form.cleaned_data["change_reason"],
+        )
+        messages.success(
+            self.request,
+            "Change request submitted. An admin must approve it before the sale is updated.",
+        )
+        return redirect(self.success_url)
 
 
 class SaleDeleteView(AdminRequiredMixin, DeleteView):
@@ -555,3 +660,97 @@ def expense_report(request):
         "shop/expense_report.html",
         {"expenses": expenses, "by_category": by_category, "start": start, "end": end},
     )
+
+
+class SaleChangeRequestListView(AdminRequiredMixin, ListView):
+    model = SaleChangeRequest
+    template_name = "shop/sale_change_list.html"
+    context_object_name = "change_requests"
+
+    def get_queryset(self):
+        return (
+            SaleChangeRequest.objects.filter(status=SaleChangeRequest.Status.PENDING)
+            .select_related("sale", "sale__service", "requested_by")
+            .order_by("requested_at")
+        )
+
+
+class SaleChangeRequestReviewView(AdminRequiredMixin, TemplateView):
+    template_name = "shop/sale_change_review.html"
+
+    def get_change_request(self):
+        return get_object_or_404(
+            SaleChangeRequest.objects.select_related(
+                "sale",
+                "sale__service",
+                "sale__staff",
+                "sale__customer",
+                "requested_by",
+                "service",
+                "staff",
+                "customer",
+            ),
+            pk=self.kwargs["pk"],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["change_request"] = self.get_change_request()
+        context["review_form"] = SaleChangeReviewForm()
+        context["sale_is_stale"] = (
+            context["change_request"].sale.updated_at != context["change_request"].sale_updated_at_snapshot
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        change_request = self.get_change_request()
+        action = request.POST.get("action")
+        review_form = SaleChangeReviewForm(request.POST)
+
+        if action == "approve":
+            ok, error = approve_change_request(change_request, request.user)
+            if ok:
+                messages.success(request, "Sale change approved and applied.")
+            else:
+                messages.error(request, error)
+            return redirect("sale-change-list")
+
+        if action == "reject":
+            if not review_form.is_valid():
+                messages.error(request, "Could not reject this request.")
+                return redirect("sale-change-review", pk=change_request.pk)
+            ok, error = reject_change_request(
+                change_request,
+                request.user,
+                review_form.cleaned_data.get("admin_notes", ""),
+            )
+            if ok:
+                messages.success(request, "Sale change request rejected.")
+            else:
+                messages.error(request, error)
+            return redirect("sale-change-list")
+
+        messages.error(request, "Unknown action.")
+        return redirect("sale-change-review", pk=change_request.pk)
+
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    model = StaffNotification
+    template_name = "shop/notifications.html"
+    context_object_name = "notifications"
+    paginate_by = 25
+
+    def get_queryset(self):
+        return StaffNotification.objects.filter(user=self.request.user).select_related("change_request")
+
+
+def notification_open(request, pk):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    notification = get_object_or_404(StaffNotification, pk=pk, user=request.user)
+    if notification.read_at is None:
+        notification.read_at = timezone.now()
+        notification.save(update_fields=["read_at"])
+    if notification.link:
+        return redirect(notification.link)
+    return redirect("dashboard")

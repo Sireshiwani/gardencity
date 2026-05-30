@@ -1,0 +1,26 @@
+{% extends 'shop/base.html' %}
+{% block title %}Notifications | Garden City Fine Cuts{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Inbox</p>
+    <h1 class="mt-3 font-display text-4xl font-bold text-white">Notifications</h1>
+</div>
+
+<section class="glass-card rounded-3xl p-6">
+    <div class="space-y-3">
+        {% for notification in notifications %}
+            <a
+                href="{% url 'notification-open' notification.pk %}"
+                class="block rounded-2xl border px-4 py-4 transition hover:border-gold/40 {% if notification.is_read %}border-white/10 bg-black/10 text-gray-400{% else %}border-gold/20 bg-black/20 text-gray-200{% endif %}"
+            >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p>{{ notification.message }}</p>
+                    <span class="text-xs uppercase tracking-widest text-gray-500">{{ notification.created_at|date:"M d, H:i" }}</span>
+                </div>
+            </a>
+        {% empty %}
+            <p class="text-gray-400">No notifications yet.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

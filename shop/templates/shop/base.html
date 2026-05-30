@@ -65,12 +65,12 @@
                                 <a href="{% url 'dashboard' %}" class="whitespace-nowrap transition hover:text-yellow-500">Dashboard</a>
                                 <a href="{% url 'sale-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Sales</a>
                                 <a href="{% url 'expense-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Expenses</a>
-                                <a href="{% url 'customer-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Customers</a>
                             {% elif request.user.role == 'admin' %}
                                 <a href="{% url 'dashboard' %}" class="whitespace-nowrap transition hover:text-yellow-500">Dashboard</a>
                                 <a href="{% url 'staff-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Staff</a>
                                 <a href="{% url 'service-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Services</a>
                                 <a href="{% url 'sale-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Sales</a>
+                                <a href="{% url 'sale-change-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Sale Changes{% if pending_sale_change_count %} ({{ pending_sale_change_count }}){% endif %}</a>
                                 <a href="{% url 'expense-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Expenses</a>
                                 <a href="{% url 'payment-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Payouts</a>
                                 <a href="{% url 'sales-report' %}" class="whitespace-nowrap transition hover:text-yellow-500">Reports</a>
@@ -81,9 +81,13 @@
                                 <a href="{% url 'salary-advance-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Advances</a>
                             {% else %}
                                 <a href="{% url 'dashboard' %}" class="whitespace-nowrap transition hover:text-yellow-500">Dashboard</a>
-                                <a href="{% url 'customer-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Customers</a>
                                 <a href="{% url 'barber-notes' %}" class="whitespace-nowrap transition hover:text-yellow-500">Ledger</a>
                                 <a href="{% url 'salary-advance-list' %}" class="whitespace-nowrap transition hover:text-yellow-500">Advances</a>
+                            {% endif %}
+                            {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'staff' %}
+                                <a href="{% url 'notifications' %}" class="whitespace-nowrap transition hover:text-yellow-500">
+                                    Notifications{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}
+                                </a>
                             {% endif %}
                             <form method="post" action="{% url 'logout' %}" class="shrink-0">
                                 {% csrf_token %}
@@ -112,12 +116,12 @@
                             <a href="{% url 'dashboard' %}" class="hover:text-yellow-500">Dashboard</a>
                             <a href="{% url 'sale-list' %}" class="hover:text-yellow-500">Sales</a>
                             <a href="{% url 'expense-list' %}" class="hover:text-yellow-500">Expenses</a>
-                            <a href="{% url 'customer-list' %}" class="hover:text-yellow-500">Customers</a>
                         {% elif request.user.role == 'admin' %}
                             <a href="{% url 'dashboard' %}" class="hover:text-yellow-500">Dashboard</a>
                             <a href="{% url 'staff-list' %}" class="hover:text-yellow-500">Staff</a>
                             <a href="{% url 'service-list' %}" class="hover:text-yellow-500">Services</a>
                             <a href="{% url 'sale-list' %}" class="hover:text-yellow-500">Sales</a>
+                            <a href="{% url 'sale-change-list' %}" class="hover:text-yellow-500">Sale Changes{% if pending_sale_change_count %} ({{ pending_sale_change_count }}){% endif %}</a>
                             <a href="{% url 'expense-list' %}" class="hover:text-yellow-500">Expenses</a>
                             <a href="{% url 'payment-list' %}" class="hover:text-yellow-500">Payouts</a>
                             <a href="{% url 'sales-report' %}" class="hover:text-yellow-500">Reports</a>
@@ -128,9 +132,13 @@
                             <a href="{% url 'salary-advance-list' %}" class="hover:text-yellow-500">Advances</a>
                         {% else %}
                             <a href="{% url 'dashboard' %}" class="hover:text-yellow-500">Dashboard</a>
-                            <a href="{% url 'customer-list' %}" class="hover:text-yellow-500">Customers</a>
                             <a href="{% url 'barber-notes' %}" class="hover:text-yellow-500">Ledger</a>
                             <a href="{% url 'salary-advance-list' %}" class="hover:text-yellow-500">Advances</a>
+                        {% endif %}
+                        {% if request.user.role == 'admin' or request.user.role == 'manager' or request.user.role == 'staff' %}
+                            <a href="{% url 'notifications' %}" class="hover:text-yellow-500">
+                                Notifications{% if unread_notification_count %} ({{ unread_notification_count }}){% endif %}
+                            </a>
                         {% endif %}
                         <form method="post" action="{% url 'logout' %}" class="pt-2">
                             {% csrf_token %}

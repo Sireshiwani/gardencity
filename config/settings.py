@@ -64,6 +64,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'shop.context_processors.currency',
+                'shop.context_processors.notifications',
             ],
         },
     },
@@ -185,14 +186,23 @@ if not DEBUG:
         "true",
         "yes",
     )
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = os.environ.get("DJANGO_SESSION_COOKIE_SECURE", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    CSRF_COOKIE_SECURE = os.environ.get("DJANGO_CSRF_COOKIE_SECURE", "true").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 AUTH_USER_MODEL = 'shop.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Display prefix for money amounts in templates (Kenyan Shillings).
 SITE_CURRENCY = "Kshs"
+SALE_MANAGER_EDIT_WINDOW_HOURS = 72
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
