@@ -28,10 +28,10 @@ class CustomUserAdmin(UserAdmin):
     model = User
     list_display = ("username", "full_name", "email", "role", "commission_rate", "is_active")
     fieldsets = UserAdmin.fieldsets + (
-        ("Barbershop", {"fields": ("full_name", "role", "commission_rate", "photo_url")}),
+        ("Barbershop", {"fields": ("full_name", "role", "commission_rate", "photo_url", "specialty")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Barbershop", {"fields": ("full_name", "email", "role", "commission_rate", "photo_url")}),
+        ("Barbershop", {"fields": ("full_name", "email", "role", "commission_rate", "photo_url", "specialty")}),
     )
 
 

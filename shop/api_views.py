@@ -48,8 +48,8 @@ def public_home(request):
         {
             "id": u.id,
             "name": u.full_name,
-            "role": u.get_role_display(),
             "photo_url": u.photo_url,
+            "specialty": u.specialty,
             "commission_rate": str(u.commission_rate),
         }
         for u in User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")[:8]

@@ -17,6 +17,11 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=Roles.choices, default=Roles.STAFF)
     photo_url = models.URLField(blank=True, help_text="Public URL for this staff member's profile photo.")
+    specialty = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Short public bio shown on the website (e.g. Precision fade specialist).",
+    )
     commission_rate = models.DecimalField(
         max_digits=5,
         decimal_places=2,
