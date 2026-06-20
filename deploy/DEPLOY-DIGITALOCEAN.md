@@ -71,7 +71,6 @@ sudo systemctl enable --now finecuts-next
 
 ```bash
 sudo cp /var/www/gardencity/deploy/nginx-finecuts.conf /etc/nginx/sites-available/finecuts
-sudo sed -i 's/YOUR_DOMAIN/yourdomain.com/g' /etc/nginx/sites-available/finecuts
 sudo ln -sf /etc/nginx/sites-available/finecuts /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
@@ -81,120 +80,206 @@ HTTPS:
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d gardencityfinecuts.co.ke -d www.gardencityfinecuts.co.ke
 ```
 
 ## 6. Environment variables
 
-### `/var/www/gardencity/.env` (Django)
+Use **only** `/var/www/gardencity/.env` with **`finecuts-django.service`**.  
+Disable the legacy `finecuts.service` if it exists (it reads `/var/www/finecuts/.env`).
+
+```bash
+sudo systemctl stop finecuts 2>/dev/null; sudo systemctl disable finecuts 2>/dev/null
+sudo systemctl enable --now finecuts-django
+```
+
+### `/var/www/gardencity/.env` (Django) — before SSL (HTTP)
 
 ```env
 DJANGO_DEBUG=False
 DJANGO_SECRET_KEY=<long-random-secret>
-DJANGO_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-DJANGO_CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+DJANGO_ALLOWED_HOSTS=gardencityfinecuts.co.ke,www.gardencityfinecuts.co.ke,127.0.0.1,127.0.0.1:8000,localhost,localhost:8000,165.22.30.29
+DJANGO_CSRF_TRUSTED_ORIGINS=http://gardencityfinecuts.co.ke,http://www.gardencityfinecuts.co.ke,http://165.22.30.29
+DJANGO_SECURE_SSL_REDIRECT=false
+DJANGO_SESSION_COOKIE_SECURE=false
+DJANGO_CSRF_COOKIE_SECURE=false
+PUBLIC_SITE_URL=http://gardencityfinecuts.co.ke
+CORS_ALLOWED_ORIGINS=http://gardencityfinecuts.co.ke,http://www.gardencityfinecuts.co.ke
+```
 
-# Official public site — GET / on Django redirects here
-PUBLIC_SITE_URL=https://yourdomain.com
+### After `certbot` (HTTPS)
 
-# Postgres (DigitalOcean managed DB or droplet)
+```env
+DJANGO_CSRF_TRUSTED_ORIGINS=https://gardencityfinecuts.co.ke,https://www.gardencityfinecuts.co.ke
+DJANGO_SECURE_SSL_REDIRECT=true
+DJANGO_SESSION_COOKIE_SECURE=true
+DJANGO_CSRF_COOKIE_SECURE=true
+PUBLIC_SITE_URL=https://gardencityfinecuts.co.ke
+CORS_ALLOWED_ORIGINS=https://gardencityfinecuts.co.ke,https://www.gardencityfinecuts.co.ke
+```
+
+Optional Postgres:
+
+```env
 DATABASE_URL=postgres://user:pass@host:25060/dbname?sslmode=require
+```
 
-CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+### Email (required for password reset)
+
+Password reset emails staff at the address on their account. Without SMTP, reset links are not delivered.
+
+```env
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=your-address@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+EMAIL_USE_TLS=true
+EMAIL_USE_SSL=false
+DEFAULT_FROM_EMAIL=Garden City Fine Cuts <your-address@gmail.com>
+```
+
+Gmail: use an [App Password](https://myaccount.google.com/apppasswords), not your normal login password.
+
+Test from the server:
+
+```bash
+cd /var/www/gardencity && source .venv/bin/activate
+python manage.py shell -c "
+from django.core.mail import send_mail
+send_mail('Test', 'Password reset email works.', None, ['you@example.com'])
+print('sent')
+"
 ```
 
 ### `/var/www/finecuts2/.env.production` (Next)
 
 ```env
-# Server-side proxy to Gunicorn (same machine)
 DJANGO_API_URL=http://127.0.0.1:8000
-
-# Browser links to staff login, rewards, etc. (same domain — nginx routes paths)
-NEXT_PUBLIC_DJANGO_API_URL=https://yourdomain.com
-
+NEXT_PUBLIC_DJANGO_API_URL=https://gardencityfinecuts.co.ke
 PORT=3000
 ```
 
-## 7. DNS (DigitalOcean)
+## 7. DNS (Host Africa)
 
-- **A** record `@` → droplet IP  
-- **A** record `www` → droplet IP  
+In **Host Africa → Domains → Manage DNS** for `gardencityfinecuts.co.ke`:
 
-## 8. Verify
+| Type | Host | Value |
+|------|------|--------|
+| A | `@` | Your DigitalOcean droplet IPv4 |
+| A | `www` | Same droplet IPv4 |
 
-| URL | Expected |
-|-----|----------|
-| `https://yourdomain.com/` | Next marketing home |
-| `https://yourdomain.com/booking` | Next booking page |
-| `https://yourdomain.com/login/` | Django staff login |
-| `https://yourdomain.com/dashboard/` | Django staff dashboard |
-| `http://127.0.0.1:8000/` on server | Redirects to `PUBLIC_SITE_URL` |
+Nameservers (if using Host Africa DNS): `ns1.host-ww.net`, `ns2.host-ww.net`.
 
-## Troubleshooting: domain works in DNS but browser fails
+Check propagation: [dnschecker.org](https://dnschecker.org/#A/gardencityfinecuts.co.ke)
 
-Symptoms in `journalctl -u finecuts`:
+## 8. Finish deployment (run on the VPS)
 
-- `DisallowedHost: Invalid HTTP_HOST header: 'yourdomain.com'`
-- `Forbidden (CSRF cookie not set.): /`
-
-**Cause:** nginx forwards `Host: yourdomain.com`, but `.env` only lists the droplet IP. With `DEBUG=False`, secure cookies are on by default while the site is still **HTTP**.
-
-**Fix** — edit `/var/www/finecuts/.env` (paths may be `gardencity` on older servers):
-
-```env
-DJANGO_ALLOWED_HOSTS=165.22.30.29,shersh.suw.me,www.shersh.suw.me
-DJANGO_CSRF_TRUSTED_ORIGINS=http://165.22.30.29,http://shersh.suw.me,http://www.shersh.suw.me
-DJANGO_SECURE_SSL_REDIRECT=false
-DJANGO_SESSION_COOKIE_SECURE=false
-DJANGO_CSRF_COOKIE_SECURE=false
-PUBLIC_SITE_URL=
-```
-
-Then:
+### A) Services (one Gunicorn, one Next)
 
 ```bash
-sudo systemctl restart finecuts
+sudo systemctl stop finecuts 2>/dev/null; sudo systemctl disable finecuts 2>/dev/null
+sudo systemctl enable --now finecuts-django finecuts-next
+sudo ss -tlnp | grep -E '3000|8000'
 ```
 
-**nginx** — add the domain to `server_name` (see `deploy/nginx-finecuts-django-only.conf`):
-
-```nginx
-server_name 165.22.30.29 shersh.suw.me www.shersh.suw.me;
-```
+### B) Next build (required once per deploy)
 
 ```bash
+sudo rm -f /var/www/package-lock.json
+cd /var/www/finecuts2
+npm install && npm run build
+ls -la .next/BUILD_ID
+sudo chown -R www-data:www-data /var/www/finecuts2
+sudo systemctl restart finecuts-next
+```
+
+### C) Nginx (Next at `/`, Django on API/staff paths)
+
+```bash
+sudo cp /var/www/gardencity/deploy/nginx-finecuts.conf /etc/nginx/sites-available/finecuts
+sudo ln -sf /etc/nginx/sites-available/finecuts /etc/nginx/sites-enabled/finecuts
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-**Verify:**
+### D) Smoke tests (use GET for API — `curl -I` sends HEAD and returns 405)
 
 ```bash
-curl -sI -H "Host: shersh.suw.me" http://127.0.0.1/ | head -5
-curl -sI http://shersh.suw.me/ | head -5
+curl -s -o /dev/null -w "next / → %{http_code}\n" -H "Host: gardencityfinecuts.co.ke" http://127.0.0.1/
+curl -s http://127.0.0.1:8000/api/public/home/ | head -c 120
+curl -s -o /dev/null -w "api via nginx → %{http_code}\n" -H "Host: gardencityfinecuts.co.ke" http://127.0.0.1/api/public/home/
+PID=$(pgrep -f 'gunicorn config.wsgi' | head -1)
+sudo tr '\0' '\n' < /proc/$PID/environ | grep DJANGO_ALLOWED
 ```
 
-Use `http://` in the browser until certbot enables HTTPS. After SSL, set `DJANGO_*_COOKIE_SECURE=true`, `DJANGO_SECURE_SSL_REDIRECT=true`, and `https://` CSRF origins.
+Expect: `200` for home and API, JSON from Django, `gardencityfinecuts.co.ke` in `DJANGO_ALLOWED_HOSTS`.
 
-### Login returns 403 CSRF verification failed (after HTTPS)
+### E) DNS (Host Africa)
 
-1. **`.env` must use `https://` origins** (not only `http://`):
+| Type | Host | Value |
+|------|------|--------|
+| A | `@` | `165.22.30.29` |
+| A | `www` | `165.22.30.29` |
 
-   ```env
-   DJANGO_CSRF_TRUSTED_ORIGINS=https://shersh.suw.me,https://www.shersh.suw.me
-   DJANGO_SESSION_COOKIE_SECURE=true
-   DJANGO_CSRF_COOKIE_SECURE=true
-   DJANGO_SECURE_SSL_REDIRECT=true
-   ```
+Wait for propagation, then open `http://gardencityfinecuts.co.ke/` in a browser.
 
-2. **nginx SSL `location /` must forward HTTPS** (certbot sometimes omits this):
+### F) SSL (after DNS works)
 
-   ```nginx
-   proxy_set_header X-Forwarded-Proto $scheme;
-   ```
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d gardencityfinecuts.co.ke -d www.gardencityfinecuts.co.ke
+```
 
-3. **Restart** `sudo systemctl restart finecuts` and **clear site cookies** for `shersh.suw.me` (old HTTP cookies break HTTPS login).
+Update `/var/www/gardencity/.env` to the **HTTPS** block in section 6, then:
 
-4. **Check** the login page sets a cookie: DevTools → Application → Cookies → `csrftoken` on `https://shersh.suw.me`.
+```bash
+sudo systemctl restart finecuts-django
+```
+
+Update Next public URL:
+
+```bash
+nano /var/www/finecuts2/.env.production
+# NEXT_PUBLIC_DJANGO_API_URL=https://gardencityfinecuts.co.ke
+cd /var/www/finecuts2 && npm run build && sudo systemctl restart finecuts-next
+```
+
+## 9. Verify in browser
+
+| URL | Expected |
+|-----|----------|
+| `https://gardencityfinecuts.co.ke/` | Next marketing home (services/team load) |
+| `https://gardencityfinecuts.co.ke/booking` | Next booking wizard |
+| `https://gardencityfinecuts.co.ke/login/` | Django staff login |
+| `https://gardencityfinecuts.co.ke/dashboard/` | Django dashboard |
+
+## Troubleshooting
+
+### 400 on `/` or `/api/…` (DisallowedHost)
+
+Gunicorn is using the wrong `.env`. Find it:
+
+```bash
+sudo grep -r "DJANGO_ALLOWED_HOSTS" /var/www/*/.env 2>/dev/null
+pgrep -af gunicorn
+sudo tr '\0' '\n' < /proc/$(pgrep -f 'gunicorn config.wsgi' | head -1)/environ | grep DJANGO_ALLOWED
+```
+
+Use **`/var/www/gardencity/.env`** and **`finecuts-django`**, not `/var/www/finecuts/.env` + `finecuts.service`.
+
+### 301 to HTTPS but port 443 not open
+
+Set `DJANGO_SECURE_SSL_REDIRECT=false` until certbot completes (see section 6 HTTP block).
+
+### Next crash: “Could not find a production build”
+
+Run `npm run build` in `/var/www/finecuts2` and restart `finecuts-next`.
+
+### Login 403 CSRF (after HTTPS)
+
+1. `DJANGO_CSRF_TRUSTED_ORIGINS` must use `https://` for your domain.
+2. nginx must send `proxy_set_header X-Forwarded-Proto $scheme;` (in `nginx-finecuts.conf`).
+3. `sudo systemctl restart finecuts-django` and clear site cookies in the browser.
 
 ## Updates (after pushing to GitHub)
 

@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.db import transaction
 from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce, TruncDate
@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.views import View
 from django.views.generic import CreateView, DeleteView, ListView, TemplateView, UpdateView
 
 from .site_urls import public_site_url, redirect_to_public_site
@@ -137,6 +138,13 @@ class StaffLoginView(LoginView):
     def form_invalid(self, form):
         messages.error(self.request, "Invalid username or password. Please try again.")
         return super().form_invalid(form)
+
+
+class StaffLogoutView(LogoutView):
+    """Redirect to login with a same-site relative URL (avoids PUBLIC_SITE_URL logout issues)."""
+
+    next_page = reverse_lazy("login")
+    http_method_names = ["post", "options"]
 
 
 def home(request):
@@ -286,7 +294,13 @@ class StaffListView(ManagerOrAdminRequiredMixin, ListView):
     context_object_name = "staff_members"
 
     def get_queryset(self):
-        return User.objects.order_by("role", "full_name")
+        show_archived = self.request.GET.get("archived") == "1"
+        return User.roster(include_inactive=show_archived)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["show_archived"] = self.request.GET.get("archived") == "1"
+        return context
 
 
 class StaffCreateView(AdminRequiredMixin, FormTitleMixin, CreateView):
@@ -315,10 +329,30 @@ class StaffUpdateView(ManagerOrAdminRequiredMixin, FormTitleMixin, UpdateView):
         return context
 
 
-class StaffDeleteView(AdminRequiredMixin, DeleteView):
-    model = User
-    template_name = "shop/confirm_delete.html"
-    success_url = reverse_lazy("staff-list")
+class StaffDeactivateView(AdminRequiredMixin, View):
+    """Deactivate instead of delete — keeps sales and reports linked to this user."""
+
+    template_name = "shop/confirm_deactivate.html"
+
+    def get(self, request, pk):
+        member = get_object_or_404(User, pk=pk, role__in=User.STAFF_ROLES)
+        return render(request, self.template_name, {"object": member})
+
+    def post(self, request, pk):
+        member = get_object_or_404(User, pk=pk, role__in=User.STAFF_ROLES)
+        if member.pk == request.user.pk:
+            messages.error(request, "You cannot deactivate your own account.")
+            return redirect("staff-list")
+        if not member.is_active:
+            messages.info(request, f"{member.full_name} is already inactive.")
+            return redirect("staff-list")
+        member.is_active = False
+        member.save(update_fields=["is_active"])
+        messages.success(
+            request,
+            f"{member.full_name} was deactivated. Past sales stay on their record; they cannot log in or be assigned new work.",
+        )
+        return redirect("staff-list")
 
 
 class ServiceListView(ManagerOrAdminRequiredMixin, ListView):
@@ -620,14 +654,18 @@ def sales_report(request):
     by_category = sales.values("service__category").annotate(total=Coalesce(Sum("price"), Decimal("0.00"))).order_by("-total")
     by_staff = []
     for item in by_staff_raw:
-        earnings = (item["total_sales"] * item["staff__commission_rate"]) / Decimal("100.00")
+        rate = item["staff__commission_rate"]
+        if rate is None:
+            rate = Decimal("0.00")
+        total = item["total_sales"] or Decimal("0.00")
+        earnings = (total * rate) / Decimal("100.00")
         by_staff.append(
             {
-                "name": item["staff__full_name"],
-                "total_sales": item["total_sales"],
-                "commission_rate": item["staff__commission_rate"],
+                "name": item["staff__full_name"] or "Unassigned",
+                "total_sales": total,
+                "commission_rate": rate,
                 "staff_earnings": earnings,
-                "shop_net": item["total_sales"] - earnings,
+                "shop_net": total - earnings,
             }
         )
 

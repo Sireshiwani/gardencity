@@ -88,7 +88,7 @@
             {% for sale in sales %}
                 <tr>
                     <td>{{ sale.date|date:"M d, Y H:i" }}</td>
-                    <td>{{ sale.staff.full_name }}</td>
+                    <td>{% if sale.staff %}{{ sale.staff.full_name }}{% else %}{{ sale.staff_snapshot_name|default:"—" }}{% endif %}</td>
                     <td>{{ sale.service.name }}</td>
                     <td>{{ CURRENCY }} {{ sale.price }}</td>
                     <td>{{ CURRENCY }} {{ sale.commission_amount }}</td>

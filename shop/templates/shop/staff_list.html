@@ -1,13 +1,20 @@
 {% extends 'shop/base.html' %}
 {% block content %}
-<div class="flex items-end justify-between gap-4">
+<div class="flex flex-wrap items-end justify-between gap-4">
     <div>
         <p class="font-display text-sm uppercase tracking-[0.35em] text-yellow-500">Staff Management</p>
         <h1 class="mt-3 font-display text-4xl font-bold text-white">Team roster and permissions.</h1>
     </div>
-    {% if request.user.role == 'admin' %}
-        <a href="{% url 'staff-create' %}" class="rounded-full bg-gold px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Add Staff</a>
-    {% endif %}
+    <div class="flex flex-wrap items-center gap-3">
+        {% if show_archived %}
+            <a href="{% url 'staff-list' %}" class="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-gray-300 hover:border-yellow-500 hover:text-yellow-500">Hide archived</a>
+        {% else %}
+            <a href="{% url 'staff-list' %}?archived=1" class="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-gray-300 hover:border-yellow-500 hover:text-yellow-500">View archived</a>
+        {% endif %}
+        {% if request.user.role == 'admin' %}
+            <a href="{% url 'staff-create' %}" class="rounded-full bg-gold px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-black">Add Staff</a>
+        {% endif %}
+    </div>
 </div>
 <section class="mt-8 glass-card rounded-3xl p-6 table-shell">
     <table>
@@ -25,16 +32,20 @@
             {% for member in staff_members %}
                 <tr>
                     <td>{{ member.full_name }}</td>
-                    <td>{{ member.email }}</td>
+                    <td>{{ member.email|default:"—" }}</td>
                     <td>{{ member.get_role_display }}</td>
                     <td>{{ member.commission_rate }}%</td>
                     <td>{% if member.is_active %}Active{% else %}Inactive{% endif %}</td>
                     <td class="space-x-3">
                         <a href="{% url 'staff-update' member.pk %}" class="text-yellow-500">Edit</a>
-                        {% if request.user.role == 'admin' %}
-                            <a href="{% url 'staff-delete' member.pk %}" class="text-red-300">Delete</a>
+                        {% if request.user.role == 'admin' and member.is_active %}
+                            <a href="{% url 'staff-deactivate' member.pk %}" class="text-amber-400">Deactivate</a>
                         {% endif %}
                     </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6" class="text-gray-400">No {% if show_archived %}archived {% endif %}team members found.</td>
                 </tr>
             {% endfor %}
         </tbody>

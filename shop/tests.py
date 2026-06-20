@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from shop.forms import PasswordResetRequestForm
 from shop.models import Appointment, Sale, SaleChangeRequest, Service, StaffNotification, User
 from shop.services.sale_changes import approve_change_request, manager_may_edit_sale_directly
 from shop.views import appointments_for_user
@@ -275,3 +276,126 @@ class SaleChangeWorkflowTests(TestCase):
                 message__icontains="approved",
             ).exists()
         )
+
+
+class LogoutViewTests(TestCase):
+    def setUp(self):
+        self.manager = User.objects.create_user(
+            username="logoutmgr",
+            password="Manager123!",
+            full_name="Logout Manager",
+            email="logoutmgr@example.com",
+            role=User.Roles.MANAGER,
+        )
+
+    def test_logout_redirects_to_login(self):
+        self.client.force_login(self.manager)
+        response = self.client.post(reverse("logout"))
+        self.assertRedirects(response, reverse("login"), fetch_redirect_response=False)
+
+
+class PasswordResetFormTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username="resetstaff",
+            password="Staff123!",
+            full_name="Reset Staff",
+            email="resetstaff@example.com",
+            role=User.Roles.STAFF,
+        )
+
+    def test_finds_user_by_username(self):
+        form = PasswordResetRequestForm(data={"email": "resetstaff"})
+        self.assertTrue(form.is_valid())
+        users = list(form.get_users(form.cleaned_data["email"]))
+        self.assertEqual(len(users), 1)
+        self.assertEqual(users[0].username, "resetstaff")
+
+    def test_finds_user_by_email(self):
+        form = PasswordResetRequestForm(data={"email": "resetstaff@example.com"})
+        self.assertTrue(form.is_valid())
+        users = list(form.get_users(form.cleaned_data["email"]))
+        self.assertEqual(len(users), 1)
+
+    def test_rejects_user_without_email_on_file(self):
+        self.staff.email = ""
+        self.staff.save(update_fields=["email"])
+        form = PasswordResetRequestForm(data={"email": "resetstaff"})
+        self.assertFalse(form.is_valid())
+        self.assertIn("No email is linked", str(form.errors))
+
+
+class SalesReportTests(TestCase):
+    def setUp(self):
+        self.manager = User.objects.create_user(
+            username="reportmgr",
+            password="Manager123!",
+            full_name="Report Manager",
+            email="reportmgr@example.com",
+            role=User.Roles.MANAGER,
+        )
+        self.service = Service.objects.create(
+            name="Classic Cut",
+            category="haircut",
+            price=Decimal("500.00"),
+            duration_minutes=30,
+        )
+        Sale.objects.create(
+            service=self.service,
+            staff=None,
+            staff_snapshot_name="Former Staff",
+            price=Decimal("500.00"),
+            payment_method="cash",
+        )
+
+    def test_sales_report_with_unassigned_staff(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("sales-report"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Former Staff")
+        self.assertContains(response, "Unassigned")
+
+
+class StaffDeactivateTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="deactadmin",
+            password="Admin123!",
+            full_name="Deactivate Admin",
+            email="deactadmin@example.com",
+            role=User.Roles.ADMIN,
+        )
+        self.barber = User.objects.create_user(
+            username="oldbarber",
+            password="Staff123!",
+            full_name="Old Barber",
+            email="oldbarber@example.com",
+            role=User.Roles.STAFF,
+        )
+        self.service = Service.objects.create(
+            name="Trim",
+            category="haircut",
+            price=Decimal("300.00"),
+            duration_minutes=30,
+        )
+        Sale.objects.create(
+            service=self.service,
+            staff=self.barber,
+            price=Decimal("300.00"),
+            payment_method="cash",
+        )
+
+    def test_deactivate_hides_from_roster_but_keeps_sales(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("staff-deactivate", args=[self.barber.pk]))
+        self.assertRedirects(response, reverse("staff-list"))
+
+        self.barber.refresh_from_db()
+        self.assertFalse(self.barber.is_active)
+        self.assertEqual(User.roster().count(), 1)
+        self.assertEqual(Sale.objects.filter(staff=self.barber).count(), 1)
+
+    def test_inactive_staff_not_assignable(self):
+        self.barber.is_active = False
+        self.barber.save(update_fields=["is_active"])
+        self.assertNotIn(self.barber, User.assignable_staff())

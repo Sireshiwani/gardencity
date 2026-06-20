@@ -152,10 +152,39 @@ class LoginForm(TailwindMixin, AuthenticationForm):
 
 
 class PasswordResetRequestForm(TailwindMixin, PasswordResetForm):
+    """Accept email or username (staff often sign in with username)."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["email"].widget.attrs["placeholder"] = "Email address"
+        self.fields["email"].label = "Email or username"
+        self.fields["email"].widget = forms.TextInput(
+            attrs={"placeholder": "Email or username", "autocomplete": "username"}
+        )
         self.apply_tailwind()
+
+    def clean_email(self):
+        identifier = (self.cleaned_data.get("email") or "").strip()
+        if not identifier:
+            raise ValidationError("Enter your email address or username.")
+        matches = list(self._matching_users(identifier))
+        if matches and not any(u.email for u in matches if u.has_usable_password()):
+            raise ValidationError(
+                "No email is linked to this account. Ask a manager to add your email in staff "
+                "settings, or ask them to reset your password."
+            )
+        return identifier
+
+    def _matching_users(self, identifier: str):
+        qs = User._default_manager.filter(is_active=True)
+        if "@" in identifier:
+            return qs.filter(email__iexact=identifier)
+        return qs.filter(username__iexact=identifier)
+
+    def get_users(self, email):
+        identifier = email.strip()
+        for user in self._matching_users(identifier):
+            if user.has_usable_password() and user.email:
+                yield user
 
 
 class PasswordResetConfirmStyledForm(TailwindMixin, SetPasswordForm):
@@ -215,6 +244,7 @@ class SaleForm(TailwindMixin, forms.ModelForm):
         cust.required = False
         cust.empty_label = "— Select existing customer (optional) —"
         cust.queryset = Customer.objects.all().order_by("last_name", "first_name", "email")
+        self.fields["staff"].queryset = User.assignable_staff()
         self.apply_tailwind()
 
     def clean(self):
@@ -314,9 +344,7 @@ class PaymentCreateForm(TailwindMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["staff"].queryset = User.objects.filter(
-            role__in=[User.Roles.ADMIN, User.Roles.MANAGER, User.Roles.STAFF]
-        ).order_by("full_name")
+        self.fields["staff"].queryset = User.assignable_staff()
         self.fields["date"].initial = timezone.localdate
         self.apply_tailwind()
 
@@ -443,6 +471,7 @@ class PublicBookingForm(TailwindMixin, forms.ModelForm):
         self.acting_user = acting_user
         super().__init__(*args, **kwargs)
         self.fields["staff"].required = False
+        self.fields["staff"].queryset = User.assignable_staff()
         ce = self.fields["customer_email"]
         ce.required = False
         ce.label = "Email (optional)"

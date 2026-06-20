@@ -173,7 +173,8 @@ LOGIN_REDIRECT_URL = 'dashboard'
 
 # Official public site (Next.js). When set, GET / redirects here instead of Django home.html.
 PUBLIC_SITE_URL = os.environ.get("PUBLIC_SITE_URL", "").strip().rstrip("/")
-LOGOUT_REDIRECT_URL = PUBLIC_SITE_URL or "home"
+# Where to send users after logout (named URL route, not PUBLIC_SITE_URL).
+LOGOUT_REDIRECT_URL = os.environ.get("LOGOUT_REDIRECT_URL", "login").strip() or "login"
 
 # Comma-separated origins for browser → Django API (optional; Next proxy avoids most CORS).
 _cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()

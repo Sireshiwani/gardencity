@@ -27,6 +27,25 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = ["email", "full_name"]
 
+    STAFF_ROLES = (
+        Roles.ADMIN,
+        Roles.MANAGER,
+        Roles.STAFF,
+    )
+
+    @classmethod
+    def assignable_staff(cls):
+        """Active team members who can be booked or assigned to sales."""
+        return cls.objects.filter(role__in=cls.STAFF_ROLES, is_active=True).order_by("full_name")
+
+    @classmethod
+    def roster(cls, *, include_inactive: bool = False):
+        """Staff/admin/manager accounts for the team list."""
+        qs = cls.objects.filter(role__in=cls.STAFF_ROLES)
+        if not include_inactive:
+            qs = qs.filter(is_active=True)
+        return qs.order_by("role", "full_name")
+
     def save(self, *args, **kwargs):
         if self.role in {self.Roles.ADMIN, self.Roles.MANAGER}:
             self.is_staff = True

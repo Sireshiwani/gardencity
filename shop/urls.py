@@ -1,11 +1,10 @@
 from django.contrib.auth.views import (
-    LogoutView,
     PasswordResetCompleteView,
     PasswordResetConfirmView,
     PasswordResetDoneView,
     PasswordResetView,
 )
-from django.urls import path
+from django.urls import path, reverse_lazy
 
 from .forms import PasswordResetConfirmStyledForm, PasswordResetRequestForm
 from .loyalty_views import (
@@ -44,9 +43,10 @@ from .views import (
     ServiceListView,
     ServiceUpdateView,
     StaffCreateView,
-    StaffDeleteView,
+    StaffDeactivateView,
     StaffListView,
     StaffLoginView,
+    StaffLogoutView,
     StaffUpdateView,
     book_now,
     expense_report,
@@ -72,15 +72,16 @@ urlpatterns = [
     path("loyalty/slow-hours/<int:pk>/edit/", SlowHourUpdateView.as_view(), name="slow-hour-edit"),
     path("loyalty/slow-hours/<int:pk>/delete/", SlowHourDeleteView.as_view(), name="slow-hour-delete"),
     path("login/", StaffLoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(), name="logout"),
+    path("logout/", StaffLogoutView.as_view(), name="logout"),
     path(
         "password-reset/",
         PasswordResetView.as_view(
             form_class=PasswordResetRequestForm,
             template_name="shop/password_reset_form.html",
             email_template_name="shop/password_reset_email.txt",
+            html_email_template_name="shop/password_reset_email.html",
             subject_template_name="shop/password_reset_subject.txt",
-            success_url="/password-reset/done/",
+            success_url=reverse_lazy("password_reset_done"),
         ),
         name="password_reset",
     ),
@@ -94,7 +95,7 @@ urlpatterns = [
         PasswordResetConfirmView.as_view(
             form_class=PasswordResetConfirmStyledForm,
             template_name="shop/password_reset_confirm.html",
-            success_url="/reset/done/",
+            success_url=reverse_lazy("password_reset_complete"),
         ),
         name="password_reset_confirm",
     ),
@@ -107,7 +108,7 @@ urlpatterns = [
     path("staff/", StaffListView.as_view(), name="staff-list"),
     path("staff/add/", StaffCreateView.as_view(), name="staff-create"),
     path("staff/<int:pk>/edit/", StaffUpdateView.as_view(), name="staff-update"),
-    path("staff/<int:pk>/delete/", StaffDeleteView.as_view(), name="staff-delete"),
+    path("staff/<int:pk>/deactivate/", StaffDeactivateView.as_view(), name="staff-deactivate"),
     path("services/", ServiceListView.as_view(), name="service-list"),
     path("services/add/", ServiceCreateView.as_view(), name="service-create"),
     path("services/<int:pk>/edit/", ServiceUpdateView.as_view(), name="service-update"),
