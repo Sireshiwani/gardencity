@@ -51,6 +51,14 @@ class User(AbstractUser):
             qs = qs.filter(is_active=True)
         return qs.order_by("role", "full_name")
 
+    @classmethod
+    def public_barbers(cls):
+        """Active barbers for the public site (staff/managers, not admin or customers)."""
+        return cls.objects.filter(
+            role__in=(cls.Roles.STAFF, cls.Roles.MANAGER),
+            is_active=True,
+        ).order_by("full_name")
+
     def save(self, *args, **kwargs):
         if self.role in {self.Roles.ADMIN, self.Roles.MANAGER}:
             self.is_staff = True

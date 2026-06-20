@@ -149,8 +149,8 @@ class StaffLogoutView(LogoutView):
 
 def home(request):
     services = Service.objects.filter(is_active=True).order_by("category", "name")[:3]
-    team = User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")[:3]
-    team_all = User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")
+    team = User.public_barbers()
+    team_all = team
     booking_services = Service.objects.filter(is_active=True).order_by("category", "name")
     services_payload = [
         {

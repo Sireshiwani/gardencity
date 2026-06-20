@@ -52,7 +52,7 @@ def public_home(request):
             "specialty": u.specialty,
             "commission_rate": str(u.commission_rate),
         }
-        for u in User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")[:8]
+        for u in User.public_barbers()
     ]
     return _cors(JsonResponse({"services": services, "team": team}), request)
 
