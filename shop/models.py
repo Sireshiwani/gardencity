@@ -53,10 +53,9 @@ class User(AbstractUser):
 
     @classmethod
     def public_barbers(cls):
-        """Active barbers for the public site (staff/managers, not admin or customers)."""
-        return cls.objects.filter(
-            role__in=(cls.Roles.STAFF, cls.Roles.MANAGER),
-            is_active=True,
+        """Active team members on the public site (excludes admin and customer accounts)."""
+        return cls.objects.filter(is_active=True).exclude(
+            role__in=(cls.Roles.ADMIN, cls.Roles.CUSTOMER)
         ).order_by("full_name")
 
     def save(self, *args, **kwargs):

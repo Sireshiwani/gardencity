@@ -71,7 +71,7 @@ def booking_options(request):
     ]
     staff = [
         {"id": u.id, "name": u.full_name}
-        for u in User.objects.filter(role=User.Roles.STAFF, is_active=True).order_by("full_name")
+        for u in User.public_barbers()
     ]
     return _cors(JsonResponse({"services": services, "staff": staff}), request)
 
